@@ -1,0 +1,17 @@
+<MudPaper Elevation="0" Class="pa-4" Style="border:1px solid var(--mud-palette-lines-default);border-radius:6px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+        <MudText Typo="Typo.overline" Style="color:var(--mud-palette-text-secondary);">@Label</MudText>
+        @if (!string.IsNullOrEmpty(Icon))
+        {
+            <MudIcon Icon="@Icon" Size="Size.Small" Style="color:var(--va-brass);" />
+        }
+    </div>
+    <MudText Class="mt-1" Style="@($"font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.8rem;line-height:1;{(Accent ? "color:var(--va-brass-deep);" : "")}")">@Value</MudText>
+</MudPaper>
+
+@code {
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public bool Accent { get; set; }
+}

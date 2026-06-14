@@ -1,0 +1,9 @@
+<MudItem xs="6" md="3" Class="text-center">
+    <MudText Style="font-family:'Cormorant Garamond',serif;font-weight:600;font-size:2.8rem;line-height:1;color:#C8A95B;">@Value</MudText>
+    <MudText Typo="Typo.overline" Class="mt-2" Style="color:#AEB8B1;">@Label</MudText>
+</MudItem>
+
+@code {
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public string Label { get; set; } = "";
+}

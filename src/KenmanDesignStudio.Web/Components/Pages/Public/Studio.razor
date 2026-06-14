@@ -1,0 +1,89 @@
+@page "/studio"
+@inject ShowcaseService Showcase
+
+<PageTitle>The Studio · Kenman Design Studio</PageTitle>
+
+<section class="va-section-deep" style="padding:8rem 0 4rem;">
+    <MudContainer MaxWidth="MaxWidth.Large">
+        <div class="va-eyebrow" style="color:#C8A95B;">The Atelier</div>
+        <MudText Typo="Typo.h2" Class="mt-2" Style="color:#F4F1EA;max-width:820px;">
+            We design landscapes as architecture — enduring, intentional, alive.
+        </MudText>
+        <MudText Class="mt-4" Style="color:#AEB8B1;max-width:620px;line-height:1.8;">
+            Kenman Design Studio is a landscape architecture, design and development studio working at the
+            intersection of ecology and artistry. For two decades we have shaped the grounds of the
+            world's most ambitious places — from sky gardens crowning landmark towers to championship
+            courses and private estates.
+        </MudText>
+    </MudContainer>
+</section>
+
+<section class="py-16" style="background:var(--mud-palette-background);">
+    <MudContainer MaxWidth="MaxWidth.Large">
+        <MudGrid Spacing="6">
+            <MudItem xs="12" md="4">
+                <div class="va-eyebrow">Our Philosophy</div>
+                <MudText Typo="Typo.h3" Class="mt-2" Style="font-family:'Cormorant Garamond',serif;">Three principles guide every commission.</MudText>
+            </MudItem>
+            <MudItem xs="12" md="8">
+                <MudGrid Spacing="4">
+                    @foreach (var pr in Principles)
+                    {
+                        <MudItem xs="12" sm="4">
+                            <MudIcon Icon="@pr.Icon" Style="color:var(--va-brass);font-size:2rem;" />
+                            <MudText Typo="Typo.h6" Class="mt-2" Style="font-weight:500;">@pr.Title</MudText>
+                            <MudText Typo="Typo.body2" Class="mt-1" Style="color:var(--mud-palette-text-secondary);">@pr.Body</MudText>
+                        </MudItem>
+                    }
+                </MudGrid>
+            </MudItem>
+        </MudGrid>
+    </MudContainer>
+</section>
+
+<section class="va-section-deep py-12">
+    <MudContainer MaxWidth="MaxWidth.Large">
+        <MudGrid>
+            <StatItem Value="@($"{_stats.Projects}+")" Label="Projects Delivered" />
+            <StatItem Value="@Format.Money(_stats.Value)" Label="Landscape Value" />
+            <StatItem Value="@($"{_stats.Clients}")" Label="Prestige Clients" />
+            <StatItem Value="20+" Label="Years of Craft" />
+        </MudGrid>
+    </MudContainer>
+</section>
+
+<section class="py-16 va-section-stone">
+    <MudContainer MaxWidth="MaxWidth.Large">
+        <SectionHeader Center="true" Eyebrow="What We Do" Title="Six disciplines, mastered" />
+        <MudGrid Class="mt-4">
+            @foreach (var cat in CategoryCatalog.All)
+            {
+                <MudItem xs="12" sm="6" md="4">
+                    <div class="pa-4">
+                        <div style="@($"width:42px;height:3px;background:{cat.GradientTo};margin-bottom:1rem;")"></div>
+                        <MudText Typo="Typo.h6" Style="font-family:'Cormorant Garamond',serif;font-weight:600;">@cat.Name</MudText>
+                        <MudText Typo="Typo.body2" Class="mt-1" Style="color:#5E6B64;">@cat.Blurb</MudText>
+                    </div>
+                </MudItem>
+            }
+        </MudGrid>
+        <div class="text-center mt-8">
+            <MudButton Variant="Variant.Filled" Size="Size.Large" Href="/consultation"
+                       Style="background:#16302B;color:#F4F1EA;" EndIcon="@Icons.Material.Filled.ArrowForward">Begin a Conversation</MudButton>
+        </div>
+    </MudContainer>
+</section>
+
+@code {
+    private (int Projects, int Clients, decimal Value, int Awards) _stats;
+
+    private record Principle(string Title, string Body, string Icon);
+    private static readonly Principle[] Principles =
+    {
+        new("Ecology First", "Every landscape begins with its living systems — soil, water, climate and habitat.", Icons.Material.Filled.Spa),
+        new("Architectural Rigor", "We design grounds with the same precision and intent as the buildings they embrace.", Icons.Material.Filled.Architecture),
+        new("Enduring Craft", "Materials, planting and detailing chosen to mature gracefully over generations.", Icons.Material.Filled.Diamond),
+    };
+
+    protected override async Task OnInitializedAsync() => _stats = await Showcase.GetStatsAsync();
+}

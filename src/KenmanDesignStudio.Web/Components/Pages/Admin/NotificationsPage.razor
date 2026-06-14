@@ -1,0 +1,87 @@
+@page "/admin/notifications"
+@layout AdminLayout
+@inject NotificationService NotificationSvc
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>Notifications · Kenman Design Studio</PageTitle>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;margin-bottom:1.4rem;">
+    <div>
+        <div class="va-eyebrow">Activity</div>
+        <MudText Typo="Typo.h3" Class="mt-1" Style="font-weight:600;">Notifications</MudText>
+        <MudText Typo="Typo.body2" Style="color:var(--mud-palette-text-secondary);">@_items.Count(n => !n.IsRead) unread · @_items.Count total events</MudText>
+    </div>
+    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.DoneAll" OnClick="MarkAll">Mark all read</MudButton>
+</div>
+
+<MudPaper Elevation="0" Style="border:1px solid var(--mud-palette-lines-default);border-radius:6px;overflow:hidden;">
+    <MudTimeline TimelinePosition="TimelinePosition.Start" Class="pa-5">
+        @foreach (var n in _items)
+        {
+            <MudTimelineItem Color="Color.Default" Size="Size.Small">
+                <ItemDot>
+                    <div style="@($"width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:{NotifColor(n.Type)}22;border:1px solid {NotifColor(n.Type)};")">
+                        <MudIcon Icon="@NotifIcon(n.Type)" Style="@($"color:{NotifColor(n.Type)};font-size:1rem;")" />
+                    </div>
+                </ItemDot>
+                <ItemContent>
+                    <div class="va-lift" style="@($"padding:.8rem 1rem;border-radius:6px;cursor:pointer;border:1px solid var(--mud-palette-lines-default);{(n.IsRead ? "" : "background:var(--mud-palette-surface);")}")"
+                         @onclick="@(() => Open(n))">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;">
+                            <div>
+                                <MudText Typo="Typo.body2" Style="@($"font-weight:{(n.IsRead ? "400" : "600")};")">
+                                    @n.Title
+                                    @if (!n.IsRead) {<span style="width:8px;height:8px;border-radius:50%;background:var(--va-brass);display:inline-block;margin-left:.4rem;"></span>}
+                                </MudText>
+                                <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);">@n.Message</MudText>
+                            </div>
+                            <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);white-space:nowrap;">@n.OccurredAt.ToString("MMM d, h:mm tt")</MudText>
+                        </div>
+                    </div>
+                </ItemContent>
+            </MudTimelineItem>
+        }
+    </MudTimeline>
+</MudPaper>
+
+@code {
+    private List<Notification> _items = new();
+
+    protected override async Task OnInitializedAsync() => await Load();
+    private async Task Load() => _items = await NotificationSvc.GetListAsync();
+
+    private async Task Open(Notification n)
+    {
+        if (!n.IsRead) await NotificationSvc.MarkReadAsync(n.Id);
+        if (!string.IsNullOrEmpty(n.Link) && n.Link != "/admin/notifications") Nav.NavigateTo(n.Link);
+        else await Load();
+    }
+
+    private async Task MarkAll()
+    {
+        await NotificationSvc.MarkAllReadAsync();
+        Snackbar.Add("All notifications marked read", Severity.Success);
+        await Load();
+    }
+
+    private static string NotifIcon(NotificationType t) => t switch
+    {
+        NotificationType.Lead => Icons.Material.Filled.FilterAlt,
+        NotificationType.Project => Icons.Material.Filled.Architecture,
+        NotificationType.Client => Icons.Material.Filled.Diamond,
+        NotificationType.Award => Icons.Material.Filled.EmojiEvents,
+        NotificationType.Request => Icons.Material.Filled.MarkEmailUnread,
+        _ => Icons.Material.Filled.Settings,
+    };
+
+    private static string NotifColor(NotificationType t) => t switch
+    {
+        NotificationType.Lead => "#6B5BA8",
+        NotificationType.Project => "#3C6E8F",
+        NotificationType.Client => "#C8A95B",
+        NotificationType.Award => "#C8702E",
+        NotificationType.Request => "#3E8F63",
+        _ => "#8A94A6",
+    };
+}

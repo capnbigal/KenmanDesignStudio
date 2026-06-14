@@ -1,0 +1,18 @@
+<button type="button" @onclick="OnSelect"
+        style="@Style">
+    @Label
+</button>
+
+@code {
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public bool Active { get; set; }
+    [Parameter] public string Accent { get; set; } = "#2F5D50";
+    [Parameter] public EventCallback OnSelect { get; set; }
+
+    private string Style => Active
+        ? $"padding:.5rem 1.2rem;border-radius:999px;border:1px solid {Accent};background:{Accent};color:#fff;" +
+          "font-size:.78rem;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .25s;font-weight:500;"
+        : "padding:.5rem 1.2rem;border-radius:999px;border:1px solid var(--mud-palette-lines-default);" +
+          "background:transparent;color:var(--mud-palette-text-secondary);font-size:.78rem;letter-spacing:1.5px;" +
+          "text-transform:uppercase;cursor:pointer;transition:all .25s;font-weight:500;";
+}

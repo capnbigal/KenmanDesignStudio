@@ -1,0 +1,112 @@
+@page "/admin/campaigns"
+@layout AdminLayout
+@using ApexCharts
+@using Color = MudBlazor.Color
+@using Size = MudBlazor.Size
+@using Format = KenmanDesignStudio.Web.Services.Format
+@implements IDisposable
+@inject MarketingService Marketing
+@inject ThemeState ThemeState
+
+<PageTitle>Campaigns · Kenman Design Studio</PageTitle>
+
+<div style="margin-bottom:1.3rem;">
+    <div class="va-eyebrow">Growth</div>
+    <MudText Typo="Typo.h3" Class="mt-1" Style="font-weight:600;">Campaign Performance</MudText>
+    <MudText Typo="Typo.body2" Style="color:var(--mud-palette-text-secondary);">Spend, attribution &amp; return across marketing channels</MudText>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem;margin-bottom:1.4rem;">
+    <MiniStat Label="Total Spend" Value="@Format.Money(_totals.Spend)" Icon="@Icons.Material.Filled.Payments" />
+    <MiniStat Label="Attributed Revenue" Value="@Format.Money(_totals.Revenue)" Icon="@Icons.Material.Filled.TrendingUp" Accent="true" />
+    <MiniStat Label="Blended ROI" Value="@RoiText(BlendedRoi)" Icon="@Icons.Material.Filled.Insights" Accent="true" />
+    <MiniStat Label="Conversions" Value="@_totals.Conversions.ToString()" Icon="@Icons.Material.Filled.CheckCircle" />
+</div>
+
+<MudGrid Spacing="3">
+    <MudItem xs="12" lg="7">
+        <ChartCard Eyebrow="Return on Investment" Title="ROI by Campaign">
+            <ApexChart TItem="Campaign" Options="_roiOptions" Height="320">
+                <ApexPointSeries TItem="Campaign" Items="_campaigns" Name="ROI %"
+                                 SeriesType="SeriesType.Bar"
+                                 XValue="@(c => c.Name)" YValue="@(c => (decimal)Math.Round(c.Roi * 100))" />
+            </ApexChart>
+        </ChartCard>
+    </MudItem>
+    <MudItem xs="12" lg="5">
+        <ChartCard Eyebrow="Investment vs Return" Title="Spend &amp; Attributed Revenue">
+            <ApexChart TItem="Campaign" Options="_compareOptions" Height="320">
+                <ApexPointSeries TItem="Campaign" Items="_campaigns" Name="Spend" SeriesType="SeriesType.Bar"
+                                 XValue="@(c => Short(c.Name))" YValue="@(c => c.Spend)" />
+                <ApexPointSeries TItem="Campaign" Items="_campaigns" Name="Revenue" SeriesType="SeriesType.Bar"
+                                 XValue="@(c => Short(c.Name))" YValue="@(c => c.RevenueAttributed)" />
+            </ApexChart>
+        </ChartCard>
+    </MudItem>
+</MudGrid>
+
+<MudPaper Elevation="0" Class="mt-4" Style="border:1px solid var(--mud-palette-lines-default);border-radius:6px;">
+    <MudDataGrid T="Campaign" Items="_campaigns" Dense="true" Hover="true" SortMode="SortMode.Multiple" Class="pa-2">
+        <Columns>
+            <TemplateColumn Title="Campaign" SortBy="@(c => c.Name)">
+                <CellTemplate>
+                    <MudText Typo="Typo.body2" Style="font-weight:500;">@context.Item.Name</MudText>
+                    <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);">@context.Item.Channel.Display() · @(context.Item.IsActive ? "Active" : "Ended")</MudText>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Spend" SortBy="@(c => c.Spend)"><CellTemplate>@Format.Money(context.Item.Spend)</CellTemplate></TemplateColumn>
+            <PropertyColumn Property="@(c => c.LeadsGenerated)" Title="Leads" />
+            <TemplateColumn Title="Cost / Lead"><CellTemplate>@Format.Money(context.Item.CostPerLead)</CellTemplate></TemplateColumn>
+            <PropertyColumn Property="@(c => c.Conversions)" Title="Conv." />
+            <TemplateColumn Title="Conv. Rate"><CellTemplate>@Format.Percent(((double)context.Item.ConversionRate))</CellTemplate></TemplateColumn>
+            <TemplateColumn Title="Revenue" SortBy="@(c => c.RevenueAttributed)">
+                <CellTemplate><MudText Style="color:var(--va-brass-deep);font-weight:500;">@Format.Money(context.Item.RevenueAttributed)</MudText></CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="ROI" SortBy="@(c => c.Roi)">
+                <CellTemplate>
+                    <Pill Text="@RoiText(context.Item.Roi)" Color="@(context.Item.Roi >= 0 ? "#3E8F63" : "#B23A3A")"
+                          Icon="@(context.Item.Roi >= 0 ? Icons.Material.Filled.TrendingUp : Icons.Material.Filled.TrendingDown)" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </MudDataGrid>
+</MudPaper>
+
+@code {
+    private List<Campaign> _campaigns = new();
+    private (decimal Spend, decimal Revenue, int Leads, int Conversions) _totals;
+    private ApexChartOptions<Campaign> _roiOptions = new();
+    private ApexChartOptions<Campaign> _compareOptions = new();
+
+    private decimal BlendedRoi => _totals.Spend <= 0 ? 0 : (_totals.Revenue - _totals.Spend) / _totals.Spend;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ThemeState.OnChange += OnThemeChanged;
+        _campaigns = await Marketing.GetCampaignsAsync();
+        _totals = await Marketing.GetTotalsAsync();
+        BuildOptions();
+    }
+
+    private void OnThemeChanged() { BuildOptions(); InvokeAsync(StateHasChanged); }
+
+    private void BuildOptions()
+    {
+        var dark = ThemeState.IsDarkMode;
+        _roiOptions = ChartTheme.Base<Campaign>(dark);
+        _roiOptions.Colors = new() { "#C8A95B" };
+        _roiOptions.PlotOptions = new PlotOptions { Bar = new PlotOptionsBar { Horizontal = true, BorderRadius = 4, ColumnWidth = "60%" } };
+        _roiOptions.DataLabels = new DataLabels { Enabled = true, Formatter = "function(v){return v+'%'}" };
+
+        _compareOptions = ChartTheme.Base<Campaign>(dark);
+        _compareOptions.Colors = new() { "#8A94A6", "#2F5D50" };
+        _compareOptions.PlotOptions = new PlotOptions { Bar = new PlotOptionsBar { Horizontal = false, BorderRadius = 3, ColumnWidth = "70%" } };
+        _compareOptions.Legend = new Legend { Position = LegendPosition.Top };
+        _compareOptions.Yaxis = new List<YAxis> { new() { Labels = new YAxisLabels { Formatter = "function(v){return '$'+(v/1000000).toFixed(1)+'M'}" } } };
+    }
+
+    private static string RoiText(decimal roi) => $"{(roi >= 0 ? "+" : "")}{roi * 100:0}%";
+    private static string Short(string name) => name.Length > 14 ? name[..12] + "…" : name;
+
+    public void Dispose() => ThemeState.OnChange -= OnThemeChanged;
+}

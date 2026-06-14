@@ -1,0 +1,138 @@
+@page "/consultation"
+@inject ShowcaseService Showcase
+
+<PageTitle>Request a Consultation · Kenman Design Studio</PageTitle>
+
+<section style="background:var(--mud-palette-background);padding-top:68px;">
+    <MudGrid Spacing="0" Style="min-height:calc(100vh - 68px);">
+        <!-- LEFT: pitch -->
+        <MudItem xs="12" md="5">
+            <div class="va-section-deep" style="height:100%;padding:5rem 3rem;display:flex;flex-direction:column;justify-content:center;">
+                <div class="va-eyebrow" style="color:#C8A95B;">Begin a Conversation</div>
+                <MudText Typo="Typo.h2" Class="mt-3" Style="color:#F4F1EA;">Request a private consultation.</MudText>
+                <MudText Class="mt-4" Style="color:#AEB8B1;line-height:1.8;max-width:420px;">
+                    Tell us about your vision and one of our principals will be in touch within two business
+                    days to arrange a confidential conversation.
+                </MudText>
+                <MudDivider Style="border-color:rgba(255,255,255,.1);margin:2.5rem 0;" />
+                <div style="display:flex;flex-direction:column;gap:1rem;color:#C6CFC9;">
+                    <span><MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Style="color:#C8A95B;vertical-align:middle;margin-right:.6rem;" />info@kenmandesignstudio.com</span>
+                    <span><MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" Style="color:#C8A95B;vertical-align:middle;margin-right:.6rem;" />678-675-9193</span>
+                    <span><MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" Style="color:#C8A95B;vertical-align:middle;margin-right:.6rem;" />420 Pegwen Paradise · Savannah, GA</span>
+                </div>
+            </div>
+        </MudItem>
+
+        <!-- RIGHT: form -->
+        <MudItem xs="12" md="7">
+            <div style="padding:4rem 3rem;max-width:720px;">
+                @if (_submitted)
+                {
+                    <div class="va-fade" style="display:flex;flex-direction:column;align-items:flex-start;padding-top:3rem;">
+                        <div style="width:72px;height:72px;border-radius:50%;background:rgba(62,143,99,.15);display:flex;align-items:center;justify-content:center;">
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Style="color:#3E8F63;font-size:2.4rem;" />
+                        </div>
+                        <MudText Typo="Typo.h3" Class="mt-4" Style="font-family:'Cormorant Garamond',serif;">Thank you, @_firstName.</MudText>
+                        <MudText Class="mt-3" Style="color:var(--mud-palette-text-secondary);max-width:460px;">
+                            Your consultation request has been received and logged with our studio. A principal will
+                            reach out shortly. We look forward to learning about your project.
+                        </MudText>
+                        <div style="display:flex;gap:1rem;margin-top:2rem;">
+                            <MudButton Variant="Variant.Filled" Href="/portfolio" Style="background:#16302B;color:#F4F1EA;">Explore the Portfolio</MudButton>
+                            <MudButton Variant="Variant.Text" OnClick="Reset" Style="color:var(--va-brass-deep);">Submit another</MudButton>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <MudText Typo="Typo.h4" Style="font-family:'Cormorant Garamond',serif;" Class="mb-1">Project enquiry</MudText>
+                    <MudText Typo="Typo.body2" Class="mb-5" Style="color:var(--mud-palette-text-secondary);">All fields marked * are required.</MudText>
+
+                    <MudForm @ref="_form">
+                        <div style="display:flex;gap:1rem;" class="mb-1">
+                            <MudTextField @bind-Value="_request.Name" Label="Full name *" Required="true" RequiredError="Name is required"
+                                          Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudTextField @bind-Value="_request.Company" Label="Company / Estate" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                        </div>
+                        <div style="display:flex;gap:1rem;" class="mb-1">
+                            <MudTextField @bind-Value="_request.Email" Label="Email *" Required="true" RequiredError="Email is required"
+                                          InputType="InputType.Email" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudTextField @bind-Value="_request.Phone" Label="Phone" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                        </div>
+                        <div style="display:flex;gap:1rem;" class="mb-1">
+                            <MudSelect @bind-Value="_request.InterestCategory" Label="Discipline of interest" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                @foreach (var cat in CategoryCatalog.All)
+                                {
+                                    <MudSelectItem Value="cat.Category">@cat.Name</MudSelectItem>
+                                }
+                            </MudSelect>
+                            <MudSelect @bind-Value="_request.Region" Label="Region" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                @foreach (var r in Regions)
+                                {
+                                    <MudSelectItem Value="r">@r</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </div>
+                        <MudSelect @bind-Value="_request.BudgetBand" Label="Anticipated budget" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-1">
+                            @foreach (var b in Budgets)
+                            {
+                                <MudSelectItem Value="b">@b</MudSelectItem>
+                            }
+                        </MudSelect>
+                        <MudTextField @bind-Value="_request.Message" Label="Tell us about your project *" Required="true" RequiredError="A short message helps us prepare"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" Lines="4" Class="mb-4" />
+
+                        <MudButton Variant="Variant.Filled" Size="Size.Large" OnClick="Submit" Disabled="_submitting"
+                                   Style="background:#C8A95B;color:#16302B;font-weight:600;" EndIcon="@Icons.Material.Filled.Send">
+                            @(_submitting ? "Sending…" : "Submit Request")
+                        </MudButton>
+                    </MudForm>
+                }
+            </div>
+        </MudItem>
+    </MudGrid>
+</section>
+
+@code {
+    [SupplyParameterFromQuery] public int? Category { get; set; }
+
+    private MudForm _form = default!;
+    private Request _request = NewRequest();
+    private bool _submitted;
+    private bool _submitting;
+    private string _firstName = "";
+
+    private static readonly string[] Regions = { "Northeast", "West Coast", "Southeast", "Mountain West", "International" };
+    private static readonly string[] Budgets = { "$500K – $1M", "$1M – $2.5M", "$2.5M – $5M", "$5M – $10M", "$10M+" };
+
+    private static Request NewRequest() => new()
+    {
+        InterestCategory = ProjectCategory.RooftopSkyGarden,
+        Region = "Northeast",
+        BudgetBand = "$2.5M – $5M",
+    };
+
+    protected override void OnParametersSet()
+    {
+        if (Category is not null && Enum.IsDefined(typeof(ProjectCategory), Category.Value))
+            _request.InterestCategory = (ProjectCategory)Category.Value;
+    }
+
+    private async Task Submit()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid) return;
+
+        _submitting = true;
+        _firstName = _request.Name.Split(' ').FirstOrDefault() ?? _request.Name;
+        await Showcase.SubmitConsultationAsync(_request);
+        _submitting = false;
+        _submitted = true;
+    }
+
+    private void Reset()
+    {
+        _request = NewRequest();
+        _submitted = false;
+    }
+}

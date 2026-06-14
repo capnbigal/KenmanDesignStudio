@@ -1,0 +1,135 @@
+@page "/portfolio/{Id:int}"
+@inject ShowcaseService Showcase
+@inject ImageResolver Resolver
+@inject NavigationManager Nav
+
+<PageTitle>@(_project?.Name ?? "Project") · Kenman Design Studio</PageTitle>
+
+@if (_project is null)
+{
+    @if (_loaded)
+    {
+        <section class="va-section-deep" style="min-height:70vh;display:flex;align-items:center;">
+            <MudContainer MaxWidth="MaxWidth.Small" Class="text-center">
+                <MudText Typo="Typo.h4" Style="color:#F4F1EA;">Project not found</MudText>
+                <MudButton Class="mt-4" Variant="Variant.Outlined" Href="/portfolio" Style="border-color:rgba(200,169,91,.6);color:#C8A95B;">Back to Portfolio</MudButton>
+            </MudContainer>
+        </section>
+    }
+    else
+    {
+        <div style="height:60vh;display:flex;align-items:center;justify-content:center;"><MudProgressCircular Color="Color.Secondary" Indeterminate="true" /></div>
+    }
+}
+else
+{
+    var meta = CategoryCatalog.Get(_project.Category);
+
+    <!-- HERO -->
+    <section style="position:relative;min-height:70vh;display:flex;align-items:flex-end;overflow:hidden;background:radial-gradient(120% 120% at 70% 10%,#214b40 0%,#16302B 45%,#0c1c18 100%);">
+        @if (!string.IsNullOrEmpty(_heroImage))
+        {
+            <div style="@($"position:absolute;inset:0;background:url('{_heroImage}') center/cover;opacity:.85;")"></div>
+        }
+        <div style="position:absolute;inset:0;background:linear-gradient(0deg,rgba(7,16,13,.95) 0%,rgba(7,16,13,.35) 50%,rgba(7,16,13,.55) 100%);"></div>
+        <MudContainer MaxWidth="MaxWidth.Large" Style="position:relative;z-index:2;padding-bottom:3rem;padding-top:7rem;">
+            <MudButton StartIcon="@Icons.Material.Filled.ArrowBack" Href="/portfolio" Style="color:#C8A95B;" Class="mb-3">All Work</MudButton>
+            <div class="va-eyebrow" style="color:#C8A95B;">@meta.Name</div>
+            <MudText Typo="Typo.h1" Class="mt-2" Style="color:#F4F1EA;max-width:880px;font-size:clamp(2.4rem,5vw,4.2rem);">@_project.Name</MudText>
+            <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:1rem;color:#D9D5CC;">
+                <span><MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" Style="vertical-align:middle;color:#C8A95B;" /> @_project.City, @_project.Country</span>
+                <span><MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Size="Size.Small" Style="vertical-align:middle;color:#C8A95B;" /> @_project.Year</span>
+                <span><MudIcon Icon="@Icons.Material.Filled.Diamond" Size="Size.Small" Style="vertical-align:middle;color:#C8A95B;" /> @Format.Money(_project.Value)</span>
+            </div>
+        </MudContainer>
+    </section>
+
+    <!-- BODY -->
+    <section class="py-12" style="background:var(--mud-palette-background);">
+        <MudContainer MaxWidth="MaxWidth.Large">
+            <MudGrid Spacing="6">
+                <MudItem xs="12" md="8">
+                    <!-- main image -->
+                    <div style="border-radius:8px;overflow:hidden;aspect-ratio:16/10;background:linear-gradient(135deg,#16302B,#0c1c18);">
+                        @if (!string.IsNullOrEmpty(_selectedImage))
+                        {
+                            <img src="@_selectedImage" alt="@_project.Name" style="width:100%;height:100%;object-fit:cover;" />
+                        }
+                    </div>
+                    @if (_caption is not null)
+                    {
+                        <MudText Typo="Typo.caption" Class="mt-2" Style="color:var(--mud-palette-text-secondary);font-style:italic;">@_caption</MudText>
+                    }
+                    <!-- thumbnails -->
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:.6rem;margin-top:1rem;">
+                        @foreach (var m in _project.Media)
+                        {
+                            <div class="va-lift" style="@($"aspect-ratio:4/3;border-radius:5px;overflow:hidden;cursor:pointer;border:2px solid {(IsSelected(m) ? "var(--va-brass)" : "transparent")};")"
+                                 @onclick="@(() => Select(m))">
+                                <ProjectImage Path="@m.Path" Alt="@m.Caption" />
+                            </div>
+                        }
+                    </div>
+
+                    <MudDivider Class="my-8" />
+                    <div class="va-eyebrow">The Commission</div>
+                    <MudText Typo="Typo.h4" Class="mt-2 mb-3" Style="font-family:'Cormorant Garamond',serif;">@_project.Summary</MudText>
+                    <MudText Style="color:var(--mud-palette-text-secondary);line-height:1.8;">@_project.Description</MudText>
+                </MudItem>
+
+                <!-- details sidebar -->
+                <MudItem xs="12" md="4">
+                    <MudPaper Elevation="0" Class="pa-6" Style="border:1px solid var(--mud-palette-lines-default);border-radius:8px;position:sticky;top:90px;">
+                        <MudText Typo="Typo.overline" Style="color:var(--va-brass-deep);letter-spacing:2px;">Project Details</MudText>
+                        <Detail Label="Client" Value="@(_project.Client?.Name ?? "—")" />
+                        <Detail Label="Discipline" Value="@meta.Name" />
+                        <Detail Label="Location" Value="@($"{_project.City}, {_project.Country}")" />
+                        <Detail Label="Region" Value="@_project.Region" />
+                        <Detail Label="Contract Value" Value="@Format.Money(_project.Value)" Accent="true" />
+                        <Detail Label="Year" Value="@_project.Year.ToString()" />
+                        <Detail Label="Site Area" Value="@($"{_project.SiteAreaAcres:0.0} acres")" />
+                        @if (!string.IsNullOrEmpty(_project.ArchitectPartner))
+                        {
+                            <Detail Label="Architect" Value="@_project.ArchitectPartner" />
+                        }
+                        <Detail Label="Status" Value="@_project.Status.Display()" Last="true" />
+
+                        <MudButton FullWidth="true" Class="mt-5" Variant="Variant.Filled" Href="/consultation"
+                                   Style="background:#16302B;color:#F4F1EA;" EndIcon="@Icons.Material.Filled.ArrowForward">Commission Similar Work</MudButton>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        </MudContainer>
+    </section>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Project? _project;
+    private bool _loaded;
+    private string _selectedImage = "";
+    private string _heroImage = "";
+    private string? _caption;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _project = await Showcase.GetProjectAsync(Id);
+        _loaded = true;
+        if (_project is not null)
+        {
+            var primary = _project.PrimaryImage;
+            _heroImage = Resolver.Resolve(primary?.Path); // null path -> branded placeholder
+            _selectedImage = _heroImage;
+            _caption = primary?.Caption;
+        }
+    }
+
+    private void Select(ProjectMedia m)
+    {
+        _selectedImage = Resolver.Resolve(m.Path);
+        _caption = m.Caption;
+    }
+
+    private bool IsSelected(ProjectMedia m) => Resolver.Resolve(m.Path) == _selectedImage;
+}

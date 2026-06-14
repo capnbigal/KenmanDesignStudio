@@ -1,0 +1,15 @@
+@implements IDisposable
+@inject ThemeState ThemeState
+
+<MudThemeProvider Theme="BrandTheme.Theme" IsDarkMode="ThemeState.IsDarkMode" />
+<MudPopoverProvider />
+<MudDialogProvider Position="DialogPosition.Center" CloseButton="true" MaxWidth="MaxWidth.Medium" BackdropClick="true" />
+<MudSnackbarProvider />
+
+@code {
+    protected override void OnInitialized() => ThemeState.OnChange += OnThemeChanged;
+
+    private void OnThemeChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => ThemeState.OnChange -= OnThemeChanged;
+}

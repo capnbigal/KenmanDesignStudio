@@ -1,0 +1,131 @@
+@page "/admin/leads"
+@layout AdminLayout
+@inject LeadService LeadSvc
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Leads · Kenman Design Studio</PageTitle>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;margin-bottom:1.3rem;">
+    <div>
+        <div class="va-eyebrow">Growth</div>
+        <MudText Typo="Typo.h3" Class="mt-1" Style="font-weight:600;">Leads</MudText>
+        <MudText Typo="Typo.body2" Style="color:var(--mud-palette-text-secondary);">@_leads.Count leads · @Format.Money(_leads.Sum(l => l.EstimatedValue)) estimated value</MudText>
+    </div>
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Add" OnClick="CreateLead">New Lead</MudButton>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.4rem;">
+    <MiniStat Label="Converted" Value="@_leads.Count(l => l.Status == LeadStatus.Converted).ToString()" Icon="@Icons.Material.Filled.CheckCircle" Accent="true" />
+    <MiniStat Label="Win Rate" Value="@Format.Percent(WinRate)" Icon="@Icons.Material.Filled.EmojiEvents" />
+    <MiniStat Label="In Play" Value="@_leads.Count(l => l.Status is LeadStatus.Qualified or LeadStatus.Nurturing or LeadStatus.New).ToString()" Icon="@Icons.Material.Filled.Bolt" />
+    <MiniStat Label="Converted Value" Value="@Format.Money(_leads.Where(l => l.Status == LeadStatus.Converted).Sum(l => l.EstimatedValue))" Icon="@Icons.Material.Filled.TrendingUp" Accent="true" />
+</div>
+
+<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+    <MudChip T="string" Variant="@(_status is null ? Variant.Filled : Variant.Outlined)" OnClick="@(() => _status = null)">All</MudChip>
+    @foreach (var s in Enum.GetValues<LeadStatus>())
+    {
+        <MudChip T="string" Variant="@(_status == s ? Variant.Filled : Variant.Outlined)"
+                 Style="@(_status == s ? $"background:{Format.LeadStatusColor(s)};color:#fff;" : "")"
+                 OnClick="@(() => _status = s)">@s.Display()</MudChip>
+    }
+</div>
+
+<MudPaper Elevation="0" Style="border:1px solid var(--mud-palette-lines-default);border-radius:6px;">
+    <MudDataGrid T="Lead" Items="Filtered" Dense="true" Hover="true" SortMode="SortMode.Multiple" Class="pa-2">
+        <Columns>
+            <TemplateColumn Title="Lead" SortBy="@(l => l.ContactName)">
+                <CellTemplate>
+                    <MudText Typo="Typo.body2" Style="font-weight:500;">@context.Item.ContactName</MudText>
+                    <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);">@context.Item.CompanyName</MudText>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Source" SortBy="@(l => (int)l.Source)">
+                <CellTemplate><Pill Text="@context.Item.Source.Display()" Color="@Format.SourceColor(context.Item.Source)" /></CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Interest" SortBy="@(l => (int)l.InterestCategory)">
+                <CellTemplate><MudText Typo="Typo.body2">@CategoryCatalog.Get(context.Item.InterestCategory).ShortName</MudText></CellTemplate>
+            </TemplateColumn>
+            <PropertyColumn Property="@(l => l.Region)" Title="Region" />
+            <TemplateColumn Title="Est. Value" SortBy="@(l => l.EstimatedValue)">
+                <CellTemplate><MudText Style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--va-brass-deep);">@Format.Money(context.Item.EstimatedValue)</MudText></CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Campaign">
+                <CellTemplate><MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);">@(context.Item.Campaign?.Name ?? "—")</MudText></CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Status" SortBy="@(l => (int)l.Status)">
+                <CellTemplate>
+                    <MudMenu ActivationEvent="@MouseEvent.LeftClick" Dense="true">
+                        <ActivatorContent Context="act"><Pill Text="@context.Item.Status.Display()" Color="@Format.LeadStatusColor(context.Item.Status)" /></ActivatorContent>
+                        <ChildContent>
+                            @foreach (var s in Enum.GetValues<LeadStatus>())
+                            {
+                                <MudMenuItem OnClick="@(() => SetStatus(context.Item, s))">@s.Display()</MudMenuItem>
+                            }
+                        </ChildContent>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Received" SortBy="@(l => l.ReceivedDate)">
+                <CellTemplate><MudText Typo="Typo.caption">@context.Item.ReceivedDate.ToString("MMM d, yyyy")</MudText></CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="" Sortable="false">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Edit" OnClick="@(() => EditLead(context.Item))">Edit</MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Delete" OnClick="@(() => DeleteLead(context.Item))">Archive</MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent><MudDataGridPager T="Lead" /></PagerContent>
+    </MudDataGrid>
+</MudPaper>
+
+@code {
+    private List<Lead> _leads = new();
+    private LeadStatus? _status;
+
+    private IEnumerable<Lead> Filtered => _status is null ? _leads : _leads.Where(l => l.Status == _status);
+
+    private double WinRate
+    {
+        get
+        {
+            var decided = _leads.Count(l => l.Status is LeadStatus.Converted or LeadStatus.Lost);
+            return decided == 0 ? 0 : (double)_leads.Count(l => l.Status == LeadStatus.Converted) / decided;
+        }
+    }
+
+    protected override async Task OnInitializedAsync() => await Load();
+    private async Task Load() => _leads = await LeadSvc.GetListAsync();
+
+    private async Task SetStatus(Lead l, LeadStatus s)
+    {
+        await LeadSvc.SetStatusAsync(l.Id, s);
+        Snackbar.Add($"Lead marked {s.Display()}", Severity.Success);
+        await Load();
+    }
+
+    private async Task CreateLead()
+    {
+        var dialog = await DialogService.ShowAsync<LeadFormDialog>("New Lead");
+        var result = await dialog.Result;
+        if (result is not null && !result.Canceled) { Snackbar.Add("Lead created", Severity.Success); await Load(); }
+    }
+
+    private async Task EditLead(Lead l)
+    {
+        var parameters = new DialogParameters<LeadFormDialog> { { x => x.Existing, l } };
+        var dialog = await DialogService.ShowAsync<LeadFormDialog>("Edit Lead", parameters);
+        var result = await dialog.Result;
+        if (result is not null && !result.Canceled) { Snackbar.Add("Lead updated", Severity.Success); await Load(); }
+    }
+
+    private async Task DeleteLead(Lead l)
+    {
+        var ok = await DialogService.ShowMessageBoxAsync("Archive lead", $"Archive lead from {l.ContactName}?", yesText: "Archive", cancelText: "Cancel");
+        if (ok == true) { await LeadSvc.DeleteAsync(l.Id); Snackbar.Add("Lead archived", Severity.Info); await Load(); }
+    }
+}

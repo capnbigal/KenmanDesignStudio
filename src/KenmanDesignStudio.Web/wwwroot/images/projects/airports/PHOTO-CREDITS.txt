@@ -1,0 +1,35 @@
+﻿Real cover photos sourced from Wikimedia Commons. Format: file <- source | license | author | page
+
+va-24045-1.jpg  <-  File:Jewel Changi Airport, Singapore - 49466958183.jpg | CC BY 2.0 | cattan2011 | https://commons.wikimedia.org/wiki/File:Jewel_Changi_Airport,_Singapore_-_49466958183.jpg
+va-24067-1.jpg  <-  File:JFK Airport td (2021-10-11) 064 - Terminal 7.jpg | CC BY-SA 4.0 | Tdorante10 | https://commons.wikimedia.org/wiki/File:JFK_Airport_td_(2021-10-11)_064_-_Terminal_7.jpg
+va-24069-1.jpg  <-  File:Airport-kostroma.jpg | CC BY-SA 3.0 | A.Savin | https://commons.wikimedia.org/wiki/File:Airport-kostroma.jpg
+va-25060-1.jpg  <-  File:MosObl SVO Airport asv2018-08 img3.jpg | FAL | A.Savin | https://commons.wikimedia.org/wiki/File:MosObl_SVO_Airport_asv2018-08_img3.jpg
+va-25061-1.jpg  <-  File:Jewel-Changi Airport.jpg | CC BY-SA 4.0 | LanBo0428 | https://commons.wikimedia.org/wiki/File:Jewel-Changi_Airport.jpg
+va-25064-1.jpg  <-  File:MosObl SVO Airport asv2018-08 img5.jpg | FAL | A.Savin | https://commons.wikimedia.org/wiki/File:MosObl_SVO_Airport_asv2018-08_img5.jpg
+va-25065-1.jpg  <-  File:MosObl SVO Airport asv2018-08 img7.jpg | FAL | A.Savin | https://commons.wikimedia.org/wiki/File:MosObl_SVO_Airport_asv2018-08_img7.jpg
+va-25078-1.jpg  <-  File:May2015 Volgograd img02 Gumrak Airport.jpg | CC BY-SA 3.0 | A.Savin | https://commons.wikimedia.org/wiki/File:May2015_Volgograd_img02_Gumrak_Airport.jpg
+va-25080-1.jpg  <-  File:Amderma Airport.jpg | CC BY-SA 4.0 | Petr Gorbunov | https://commons.wikimedia.org/wiki/File:Amderma_Airport.jpg
+va-25086-1.jpg  <-  File:May2015 Volgograd img22 Gumrak Airport.jpg | CC BY-SA 3.0 | A.Savin | https://commons.wikimedia.org/wiki/File:May2015_Volgograd_img22_Gumrak_Airport.jpg
+va-25118-1.jpg  <-  File:May2015 Volgograd img20 Gumrak Airport.jpg | CC BY-SA 3.0 | A.Savin | https://commons.wikimedia.org/wiki/File:May2015_Volgograd_img20_Gumrak_Airport.jpg
+va-25153-1.jpg  <-  File:Nsk-Ob Tolmachevo terminal 07-2016.jpg | FAL | A.Savin | https://commons.wikimedia.org/wiki/File:Nsk-Ob_Tolmachevo_terminal_07-2016.jpg
+va-26055-1.jpg  <-  File:JFK Expressway td (2021-10-11) 008.jpg | CC BY-SA 4.0 | Tdorante10 | https://commons.wikimedia.org/wiki/File:JFK_Expressway_td_(2021-10-11)_008.jpg
+va-26063-1.jpg  <-  File:JFK Expressway td (2021-10-11) 007.jpg | CC BY-SA 4.0 | Tdorante10 | https://commons.wikimedia.org/wiki/File:JFK_Expressway_td_(2021-10-11)_007.jpg
+va-26066-1.jpg  <-  File:NewUHWWterminal.jpg | CC BY-SA 3.0 | Maks25rus | https://commons.wikimedia.org/wiki/File:NewUHWWterminal.jpg
+va-26073-1.jpg  <-  File:Aeroport-vnukovo-station.jpg | CC BY-SA 3.0 | A.Savin | https://commons.wikimedia.org/wiki/File:Aeroport-vnukovo-station.jpg
+va-26075-1.jpg  <-  File:Aeroport-domodedovo-station.jpg | CC BY-SA 3.0 | A.Savin | https://commons.wikimedia.org/wiki/File:Aeroport-domodedovo-station.jpg
+va-26076-1.jpg  <-  File:Cheboksary Airoport.jpg | CC BY-SA 3.0 | Георгий Долгопский | https://commons.wikimedia.org/wiki/File:Cheboksary_Airoport.jpg
+va-26098-1.jpg  <-  File:Platov-Aero-2017.jpg | CC0 | GennadyL at Russian Wikipedia | https://commons.wikimedia.org/wiki/File:Platov-Aero-2017.jpg
+va-26156-1.jpg  <-  File:Naryan-Mar Airport during midnight sun (June 2014).jpg | CC BY-SA 4.0 | Aliona Tsarkova | https://commons.wikimedia.org/wiki/File:Naryan-Mar_Airport_during_midnight_sun_(June_2014).jpg
+va-24074-1.jpg  <-  File:Brooklyn Botanic Garden - 20200911 - 06 - Cranford Rose Garden.jpg | CC BY-SA 4.0 | Andre Carrotflower | https://commons.wikimedia.org/wiki/File:Brooklyn_Botanic_Garden_-_20200911_-_06_-_Cranford_Rose_Garden.jpg
+va-24079-1.jpg  <-  File:Capel Manor College Gardens Vertical wall garden 02.jpg | CC BY-SA 4.0 | Acabashi | https://commons.wikimedia.org/wiki/File:Capel_Manor_College_Gardens_Vertical_wall_garden_02.jpg
+va-25029-1.jpg  <-  File:Battleby's living wall - geograph.org.uk - 6288482.jpg | CC BY-SA 2.0 | Richard Sutcliffe | https://commons.wikimedia.org/wiki/File:Battleby%27s_living_wall_-_geograph.org.uk_-_6288482.jpg
+va-25062-1.jpg  <-  File:Gibberd Garden lawn and garden beds Harlow Essex England 01.jpg | CC BY-SA 4.0 | Acabashi | https://commons.wikimedia.org/wiki/File:Gibberd_Garden_lawn_and_garden_beds_Harlow_Essex_England_01.jpg
+va-25070-1.jpg  <-  File:Living Wall - Free For Commercial Use - FFCU (27287157911).jpg | CC BY-SA 2.0 | Free for Commercial Use | https://commons.wikimedia.org/wiki/File:Living_Wall_-_Free_For_Commercial_Use_-_FFCU_(27287157911).jpg
+va-25081-1.jpg  <-  File:Garden lawn Heyrons High Easter Essex 01.jpg | CC BY-SA 4.0 | Acabashi | https://commons.wikimedia.org/wiki/File:Garden_lawn_Heyrons_High_Easter_Essex_01.jpg
+va-25084-1.jpg  <-  File:(Landscape with stream and path at Korakuen Garden in Okayama, Japan) - DPLA - 346abf5248cbd61bfc9324459f65b480.jpg | CC BY 4.0 | Carlquist, Sherwin John, 1930-2021 | https://commons.wikimedia.org/wiki/File:(Landscape_with_stream_and_path_at_Korakuen_Garden_in_Okayama,_Japan)_-_DPLA_-_346abf5248cbd61bfc9324459f65b480.jpg
+va-26041-1.jpg  <-  File:Living Wall In Radeberg (109169419).jpeg | CC BY 3.0 | Antonio Careses | https://commons.wikimedia.org/wiki/File:Living_Wall_In_Radeberg_(109169419).jpeg
+va-26068-1.jpg  <-  File:Gibberd Garden path and lawn Harlow Essex England.jpg | CC BY-SA 4.0 | Acabashi | https://commons.wikimedia.org/wiki/File:Gibberd_Garden_path_and_lawn_Harlow_Essex_England.jpg
+va-26115-1.jpg  <-  File:Garden lawn Heyrons High Easter Essex 02.jpg | CC BY-SA 4.0 | Acabashi | https://commons.wikimedia.org/wiki/File:Garden_lawn_Heyrons_High_Easter_Essex_02.jpg
+va-24002-1.jpg  <-  File:Dülmen, Wildpark -- 2015 -- 8894-8.jpg | CC BY-SA 4.0 | Dietmar Rabich | https://commons.wikimedia.org/wiki/File:D%C3%BClmen,_Wildpark_--_2015_--_8894-8.jpg
+va-25072-1.jpg  <-  File:Cape Town (ZA), Green Point Lighthouse -- 2024 -- 3569.jpg | CC BY-SA 4.0 | Dietmar Rabich | https://commons.wikimedia.org/wiki/File:Cape_Town_(ZA),_Green_Point_Lighthouse_--_2024_--_3569.jpg
+va-24149-1.jpg  <-  File:2008 07 Botanical Garden Meran 70910R0259.jpg | CC BY-SA 3.0 | Lord Koxinga | https://commons.wikimedia.org/wiki/File:2008_07_Botanical_Garden_Meran_70910R0259.jpg

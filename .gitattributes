@@ -1,0 +1,12 @@
+# Normalize line endings: store text as LF in the repo (ideal for the Linux
+# droplet + Docker build); Windows working copies still check out as CRLF.
+* text=auto
+
+# Binary assets — never normalize.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.webp binary
+*.avif binary
+*.ico  binary
+*.svg  text

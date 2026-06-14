@@ -1,0 +1,111 @@
+@inject ProjectService ProjectSvc
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="font-weight:500;">@(IsNew ? "New Project" : "Edit Project")</MudText>
+    </TitleContent>
+    <DialogContent>
+        <div style="min-width:min(620px,82vw);">
+            <MudTextField @bind-Value="_model.Name" Label="Project name" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
+            <div style="display:flex;gap:1rem;" class="mb-3">
+                <MudSelect @bind-Value="_model.ClientId" Label="Client" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true">
+                    @foreach (var c in _clients)
+                    {
+                        <MudSelectItem Value="c.Id">@c.Name</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudSelect @bind-Value="_model.Category" Label="Category" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var cat in CategoryCatalog.All)
+                    {
+                        <MudSelectItem Value="cat.Category">@cat.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </div>
+            <div style="display:flex;gap:1rem;" class="mb-3">
+                <MudSelect @bind-Value="_model.Status" Label="Stage" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var s in Enum.GetValues<ProjectStatus>())
+                    {
+                        <MudSelectItem Value="s">@s.Display()</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudNumericField @bind-Value="_model.Value" Label="Contract value (USD)" Variant="Variant.Outlined" Margin="Margin.Dense" Format="N0" />
+            </div>
+            <div style="display:flex;gap:1rem;" class="mb-3">
+                <MudTextField @bind-Value="_model.City" Label="City" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                <MudSelect @bind-Value="_model.Region" Label="Region" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var r in Regions)
+                    {
+                        <MudSelectItem Value="r">@r</MudSelectItem>
+                    }
+                </MudSelect>
+            </div>
+            <div style="display:flex;gap:1rem;" class="mb-3">
+                <MudDatePicker @bind-Date="_start" Label="Start date" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                <MudDatePicker @bind-Date="_completion" Label="Completion (if any)" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" />
+            </div>
+            <MudTextField @bind-Value="_model.ArchitectPartner" Label="Architect partner (optional)" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
+            <MudTextField @bind-Value="_model.Summary" Label="Summary" Variant="Variant.Outlined" Margin="Margin.Dense" Lines="2" Class="mb-3" />
+            @if (_model.Status == ProjectStatus.InConstruction || _model.Status == ProjectStatus.InDesign)
+            {
+                <MudSlider @bind-Value="_model.ProgressPercent" Min="0" Max="100" Step="5" Color="Color.Secondary">Progress: @_model.ProgressPercent%</MudSlider>
+            }
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="Save">@(IsNew ? "Create Project" : "Save Changes")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
+    [Parameter] public Project? Existing { get; set; }
+    [Parameter] public int? DefaultClientId { get; set; }
+
+    private Project _model = new();
+    private List<Client> _clients = new();
+    private DateTime? _start;
+    private DateTime? _completion;
+    private bool IsNew => Existing is null;
+
+    private static readonly string[] Regions =
+        { "Northeast", "West Coast", "Southeast", "Mountain West", "International" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _clients = await ProjectSvc.GetClientOptionsAsync();
+        if (Existing is null)
+        {
+            _model = new Project
+            {
+                Category = ProjectCategory.RooftopSkyGarden, Status = ProjectStatus.Lead,
+                Region = "Northeast", Country = "USA", ClientId = DefaultClientId ?? _clients.FirstOrDefault()?.Id ?? 0,
+            };
+            _start = DateTime.UtcNow;
+        }
+        else
+        {
+            _model = new Project
+            {
+                Id = Existing.Id, Name = Existing.Name, ClientId = Existing.ClientId, Category = Existing.Category,
+                Status = Existing.Status, City = Existing.City, Region = Existing.Region, Country = Existing.Country,
+                Value = Existing.Value, ArchitectPartner = Existing.ArchitectPartner, Summary = Existing.Summary,
+                Description = Existing.Description, ProgressPercent = Existing.ProgressPercent, IsFeatured = Existing.IsFeatured,
+            };
+            _start = Existing.StartDate;
+            _completion = Existing.CompletionDate;
+        }
+    }
+
+    private async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(_model.Name) || _model.ClientId == 0) return;
+        _model.StartDate = _start ?? DateTime.UtcNow;
+        _model.CompletionDate = _completion;
+        if (IsNew) await ProjectSvc.CreateAsync(_model);
+        else await ProjectSvc.UpdateAsync(_model);
+        Dialog.Close(DialogResult.Ok(true));
+    }
+
+    private void Cancel() => Dialog.Cancel();
+}

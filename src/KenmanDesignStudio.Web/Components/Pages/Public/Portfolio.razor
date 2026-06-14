@@ -1,0 +1,88 @@
+@page "/portfolio"
+@inject ShowcaseService Showcase
+
+<PageTitle>Portfolio · Kenman Design Studio</PageTitle>
+
+<!-- Header band -->
+<section class="va-section-deep" style="padding:8rem 0 3rem;">
+    <MudContainer MaxWidth="MaxWidth.Large">
+        <div class="va-eyebrow" style="color:#C8A95B;">Selected Work</div>
+        <MudText Typo="Typo.h2" Class="mt-2" Style="color:#F4F1EA;max-width:720px;">A portfolio of landscapes that define their place.</MudText>
+        <MudText Class="mt-3" Style="color:#AEB8B1;max-width:560px;">
+            Browse our commissions across six disciplines — from sky gardens to championship courses.
+        </MudText>
+    </MudContainer>
+</section>
+
+<!-- Filter + grid -->
+<section class="py-12" style="background:var(--mud-palette-background);">
+    <MudContainer MaxWidth="MaxWidth.Large">
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin-bottom:2.5rem;">
+            <FilterChip Active="_category is null" Label="All Work" OnSelect="@(() => SetCategory(null))" />
+            @foreach (var cat in CategoryCatalog.All)
+            {
+                <FilterChip Active="_category == cat.Category" Label="@cat.ShortName" Accent="@cat.GradientTo"
+                            OnSelect="@(() => SetCategory(cat.Category))" />
+            }
+        </div>
+
+        @if (_loading)
+        {
+            <div class="text-center py-12"><MudProgressCircular Color="Color.Secondary" Indeterminate="true" /></div>
+        }
+        else if (_projects.Count == 0)
+        {
+            <MudText Class="text-center py-12" Style="color:var(--mud-palette-text-secondary);">No projects in this discipline yet.</MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.caption" Class="mb-4" Style="color:var(--mud-palette-text-secondary);display:block;">
+                Showing @_projects.Count @(_category is null ? "projects" : CategoryCatalog.Get(_category.Value).Name.ToLower())
+            </MudText>
+            <MudGrid Spacing="3">
+                @foreach (var p in _projects)
+                {
+                    <MudItem xs="12" sm="6" md="4">
+                        <ProjectCard Project="p" Aspect="4/3" />
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+    </MudContainer>
+</section>
+
+<!-- CTA -->
+<section class="va-section-stone py-12">
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="text-center">
+        <MudText Typo="Typo.h4" Style="font-family:'Cormorant Garamond',serif;">Have a landmark in mind?</MudText>
+        <MudButton Class="mt-4" Variant="Variant.Filled" Size="Size.Large" Href="/consultation"
+                   Style="background:#16302B;color:#F4F1EA;" EndIcon="@Icons.Material.Filled.ArrowForward">Request a Consultation</MudButton>
+    </MudContainer>
+</section>
+
+@code {
+    [SupplyParameterFromQuery] public int? Category { get; set; }
+
+    private List<Project> _projects = new();
+    private ProjectCategory? _category;
+    private bool _loading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _category = Category is null ? null : (ProjectCategory)Category.Value;
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        _loading = true;
+        _projects = await Showcase.GetGalleryAsync(_category);
+        _loading = false;
+    }
+
+    private async Task SetCategory(ProjectCategory? cat)
+    {
+        _category = cat;
+        await Load();
+    }
+}

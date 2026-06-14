@@ -1,0 +1,40 @@
+## .NET build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+
+## IDE
+.vs/
+.vscode/
+.idea/
+
+## Rider
+*.sln.iml
+
+## OS
+Thumbs.db
+.DS_Store
+
+## Logs
+*.log
+
+## Secrets / local environment (the template stays tracked)
+.env
+*.env
+!deployment/.env.template
+
+## Build artifacts
+artifacts/
+[Tt]est[Rr]esults/
+
+## Local tooling & scratch — logo-generation scripts, render previews, and downloaded
+## reference images. Not needed to build/run the app (the final logo lives in
+## src/KenmanDesignStudio.Web/Components/Shared/BrandMark.razor + wwwroot/favicon.png).
+tools/
+
+# NOTE: generated SVG project plates AND the real cover photos under
+# src/KenmanDesignStudio.Web/wwwroot/images/projects/** are intentionally kept in source
+# so the gallery looks complete and the Docker image ships them without running the seeder.

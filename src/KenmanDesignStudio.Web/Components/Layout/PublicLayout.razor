@@ -1,0 +1,78 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject ThemeState ThemeState
+@inject NavigationManager Nav
+
+<KenmanProviders />
+
+<MudLayout>
+    <MudAppBar Elevation="0" Fixed="true" Dense="false"
+               Style="background:rgba(12,20,23,.82);backdrop-filter:blur(12px);border-bottom:1px solid rgba(200,169,91,.18);">
+        <BrandMark Clickable="true" OnClick="@(() => Go("/"))" Size="38" TextSize="1.15rem" />
+        <MudSpacer />
+        <div class="d-none d-md-flex" style="gap:2.2rem;align-items:center;">
+            <a class="va-navlink" href="/">Home</a>
+            <a class="va-navlink" href="/portfolio">Portfolio</a>
+            <a class="va-navlink" href="/studio">Studio</a>
+            <a class="va-navlink" href="/testimonials">Testimonials</a>
+            <a class="va-navlink" href="/consultation">Contact</a>
+        </div>
+        <MudSpacer />
+        <MudButton Variant="Variant.Outlined" Href="/consultation"
+                   Style="border-color:rgba(200,169,91,.6);color:#F4F1EA;"
+                   Class="d-none d-sm-flex mr-2">Request a Consultation</MudButton>
+        <MudTooltip Text="Open the operator platform">
+            <MudIconButton Icon="@Icons.Material.Filled.SpaceDashboard" Color="Color.Inherit"
+                           Style="color:#C8A95B;" Href="/admin" aria-label="Operator platform" />
+        </MudTooltip>
+        <MudIconButton Icon="@(ThemeState.IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                       Color="Color.Inherit" OnClick="ThemeState.Toggle" aria-label="Toggle theme" />
+    </MudAppBar>
+
+    <MudMainContent Class="pa-0" Style="margin-top:0;">
+        @Body
+
+        <footer class="va-section-deep" style="padding:4rem 0 2rem;">
+            <MudContainer MaxWidth="MaxWidth.Large">
+                <MudGrid>
+                    <MudItem xs="12" md="5">
+                        <BrandMark Size="46" TextSize="1.4rem" />
+                        <MudText Class="mt-4" Style="max-width:340px;color:#AEB8B1;">
+                            Living architecture for the world's most extraordinary places. A landscape
+                            architecture, design &amp; development studio serving prestige clients across
+                            six disciplines.
+                        </MudText>
+                    </MudItem>
+                    <MudItem xs="6" md="3">
+                        <MudText Typo="Typo.overline" Style="color:#C8A95B;">Disciplines</MudText>
+                        @foreach (var c in CategoryCatalog.All)
+                        {
+                            <MudText Class="mt-2"><a class="va-navlink" style="text-transform:none;letter-spacing:.3px;font-size:.85rem;" href="@($"/portfolio?category={(int)c.Category}")">@c.ShortName</a></MudText>
+                        }
+                    </MudItem>
+                    <MudItem xs="6" md="4">
+                        <MudText Typo="Typo.overline" Style="color:#C8A95B;">Studio</MudText>
+                        <MudText Class="mt-2" Style="color:#AEB8B1;font-size:.85rem;">420 Pegwen Paradise</MudText>
+                        <MudText Style="color:#AEB8B1;font-size:.85rem;">Savannah, GA 31419</MudText>
+                        <MudText Class="mt-3" Style="color:#AEB8B1;font-size:.85rem;">info@kenmandesignstudio.com</MudText>
+                        <MudText Style="color:#AEB8B1;font-size:.85rem;">678-675-9193</MudText>
+                        <MudButton Class="mt-4" Variant="Variant.Text" EndIcon="@Icons.Material.Filled.ArrowForward"
+                                   Style="color:#C8A95B;padding-left:0;" Href="/admin">Operator Platform</MudButton>
+                    </MudItem>
+                </MudGrid>
+                <MudDivider Style="margin:2.5rem 0 1.2rem;border-color:rgba(255,255,255,.08);" />
+                <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem;color:#7E8A83;font-size:.75rem;">
+                    <span>© @DateTime.Now.Year Kenman Design Studio. A demonstration experience.</span>
+                    <span style="letter-spacing:2px;">REFINED · ARCHITECTURAL · ENDURING</span>
+                </div>
+            </MudContainer>
+        </footer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    protected override void OnInitialized() => ThemeState.OnChange += Refresh;
+    private void Refresh() => InvokeAsync(StateHasChanged);
+    private void Go(string url) => Nav.NavigateTo(url);
+    public void Dispose() => ThemeState.OnChange -= Refresh;
+}

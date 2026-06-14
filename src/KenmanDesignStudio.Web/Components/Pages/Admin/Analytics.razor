@@ -1,0 +1,133 @@
+@page "/admin/analytics"
+@layout AdminLayout
+@using ApexCharts
+@using Color = MudBlazor.Color
+@using Size = MudBlazor.Size
+@using Format = KenmanDesignStudio.Web.Services.Format
+@implements IDisposable
+@inject AnalyticsService AnalyticsSvc
+@inject ThemeState ThemeState
+
+<PageTitle>Analytics · Kenman Design Studio</PageTitle>
+
+<div style="margin-bottom:1.4rem;">
+    <div class="va-eyebrow">Business Intelligence</div>
+    <MudText Typo="Typo.h3" Class="mt-1" Style="font-weight:600;">Studio Analytics</MudText>
+    <MudText Typo="Typo.body2" Style="color:var(--mud-palette-text-secondary);">The numbers behind the decisions — revenue, regions, and conversion.</MudText>
+</div>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Secondary" Indeterminate="true" />
+}
+else
+{
+    <MudGrid Spacing="3">
+        <MudItem xs="12" lg="6">
+            <ChartCard Eyebrow="Disciplines" Title="Booked Revenue by Category">
+                <ApexChart TItem="CategoryValue" Options="_catOptions" Height="320">
+                    <ApexPointSeries TItem="CategoryValue" Items="_byCategory" Name="Revenue" SeriesType="SeriesType.Bar"
+                                     XValue="@(c => c.Label)" YValue="@(c => c.Value)" />
+                </ApexChart>
+            </ChartCard>
+        </MudItem>
+
+        <MudItem xs="12" lg="6">
+            <ChartCard Eyebrow="Geography" Title="Value by Region">
+                <ApexChart TItem="RegionValue" Options="_regionOptions" Height="320">
+                    <ApexPointSeries TItem="RegionValue" Items="_byRegion" Name="Value" SeriesType="SeriesType.Donut"
+                                     XValue="@(r => r.Region)" YValue="@(r => r.Value)" />
+                </ApexChart>
+            </ChartCard>
+        </MudItem>
+
+        <MudItem xs="12" lg="7">
+            <ChartCard Eyebrow="Conversion" Title="Win Rate by Source">
+                <ApexChart TItem="SourceWinRate" Options="_winOptions" Height="320">
+                    <ApexPointSeries TItem="SourceWinRate" Items="_winRates" Name="Win Rate %" SeriesType="SeriesType.Bar"
+                                     XValue="@(s => s.Label)" YValue="@(s => (decimal)Math.Round(s.Rate * 100))" />
+                </ApexChart>
+            </ChartCard>
+        </MudItem>
+
+        <MudItem xs="12" lg="5">
+            <ChartCard Eyebrow="Demand" Title="Lead Volume (12 mo)">
+                <ApexChart TItem="MonthlyValue" Options="_leadOptions" Height="320">
+                    <ApexPointSeries TItem="MonthlyValue" Items="_monthlyLeads" Name="Leads" SeriesType="SeriesType.Area"
+                                     XValue="@(m => m.Label)" YValue="@(m => m.Value)" />
+                </ApexChart>
+            </ChartCard>
+        </MudItem>
+
+        <MudItem xs="12">
+            <ChartCard Eyebrow="Forward Look" Title="Open Pipeline by Category">
+                <ApexChart TItem="CategoryValue" Options="_pipeOptions" Height="280">
+                    <ApexPointSeries TItem="CategoryValue" Items="_pipeline" Name="Open Pipeline" SeriesType="SeriesType.Bar"
+                                     XValue="@(c => c.Label)" YValue="@(c => c.Value)" />
+                </ApexChart>
+            </ChartCard>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private bool _loading = true;
+    private List<CategoryValue> _byCategory = new();
+    private List<RegionValue> _byRegion = new();
+    private List<SourceWinRate> _winRates = new();
+    private List<MonthlyValue> _monthlyLeads = new();
+    private List<CategoryValue> _pipeline = new();
+
+    private ApexChartOptions<CategoryValue> _catOptions = new();
+    private ApexChartOptions<RegionValue> _regionOptions = new();
+    private ApexChartOptions<SourceWinRate> _winOptions = new();
+    private ApexChartOptions<MonthlyValue> _leadOptions = new();
+    private ApexChartOptions<CategoryValue> _pipeOptions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        ThemeState.OnChange += OnThemeChanged;
+        _byCategory = await AnalyticsSvc.GetRevenueByCategoryAsync();
+        _byRegion = await AnalyticsSvc.GetValueByRegionAsync();
+        _winRates = await AnalyticsSvc.GetWinRateBySourceAsync();
+        _monthlyLeads = await AnalyticsSvc.GetMonthlyLeadsAsync();
+        _pipeline = await AnalyticsSvc.GetPipelineByCategoryAsync();
+        BuildOptions();
+        _loading = false;
+    }
+
+    private void OnThemeChanged() { BuildOptions(); InvokeAsync(StateHasChanged); }
+
+    private void BuildOptions()
+    {
+        var dark = ThemeState.IsDarkMode;
+        var moneyFmt = "function(v){return '$'+(v/1000000).toFixed(1)+'M'}";
+
+        _catOptions = ChartTheme.Base<CategoryValue>(dark);
+        _catOptions.PlotOptions = new PlotOptions { Bar = new PlotOptionsBar { Horizontal = true, BorderRadius = 4, Distributed = true, BarHeight = "65%" } };
+        _catOptions.Legend = new Legend { Show = false };
+        _catOptions.Xaxis = new XAxis { Labels = new XAxisLabels { Formatter = moneyFmt } };
+
+        _regionOptions = ChartTheme.Base<RegionValue>(dark);
+        _regionOptions.Legend = new Legend { Position = LegendPosition.Right };
+        _regionOptions.PlotOptions = new PlotOptions { Pie = new PlotOptionsPie { Donut = new PlotOptionsDonut { Size = "60%" } } };
+
+        _winOptions = ChartTheme.Base<SourceWinRate>(dark);
+        _winOptions.Colors = new() { "#3E8F63" };
+        _winOptions.PlotOptions = new PlotOptions { Bar = new PlotOptionsBar { Horizontal = false, BorderRadius = 4, ColumnWidth = "50%" } };
+        _winOptions.DataLabels = new DataLabels { Enabled = true, Formatter = "function(v){return v+'%'}" };
+        _winOptions.Yaxis = new List<YAxis> { new() { Max = 100, Labels = new YAxisLabels { Formatter = "function(v){return v+'%'}" } } };
+
+        _leadOptions = ChartTheme.Base<MonthlyValue>(dark);
+        _leadOptions.Colors = new() { "#6B5BA8" };
+        _leadOptions.Stroke = new Stroke { Curve = Curve.Smooth, Width = 3 };
+        _leadOptions.Fill = new Fill { Type = FillType.Gradient, Gradient = new FillGradient { OpacityFrom = 0.4, OpacityTo = 0.05 } };
+
+        _pipeOptions = ChartTheme.Base<CategoryValue>(dark);
+        _pipeOptions.Colors = new() { "#C8A95B" };
+        _pipeOptions.PlotOptions = new PlotOptions { Bar = new PlotOptionsBar { Horizontal = false, BorderRadius = 4, ColumnWidth = "45%" } };
+        _pipeOptions.Yaxis = new List<YAxis> { new() { Labels = new YAxisLabels { Formatter = moneyFmt } } };
+    }
+
+    public void Dispose() => ThemeState.OnChange -= OnThemeChanged;
+}

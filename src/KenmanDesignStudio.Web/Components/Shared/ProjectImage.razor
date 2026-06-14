@@ -1,0 +1,11 @@
+@inject ImageResolver Resolver
+
+<img src="@Resolver.Resolve(Path)" alt="@Alt" loading="lazy"
+     class="@CssClass" style="@Style" />
+
+@code {
+    [Parameter, EditorRequired] public string Path { get; set; } = "";
+    [Parameter] public string Alt { get; set; } = "";
+    [Parameter] public string CssClass { get; set; } = "va-img";
+    [Parameter] public string Style { get; set; } = "width:100%;height:100%;object-fit:cover;";
+}

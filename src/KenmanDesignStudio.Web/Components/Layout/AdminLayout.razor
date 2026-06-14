@@ -1,0 +1,79 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject ThemeState ThemeState
+@inject NotificationService Notifications
+@inject NavigationManager Nav
+
+<KenmanProviders />
+
+<MudLayout>
+    <MudAppBar Elevation="0" Fixed="true"
+               Style="border-bottom:1px solid var(--mud-palette-lines-default);background:var(--mud-palette-appbar-background);">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                       OnClick="@(() => _drawerOpen = !_drawerOpen)" aria-label="Toggle navigation" />
+        <BrandMark Clickable="true" OnClick="@(() => Nav.NavigateTo("/admin"))" Size="34" TextSize="1.05rem" />
+        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                 Style="color:#C8A95B;border:1px solid rgba(200,169,91,.4);margin-left:1rem;letter-spacing:2px;"
+                 Class="d-none d-sm-flex">OPERATOR PLATFORM</MudChip>
+        <MudSpacer />
+        <MudTextField T="string" Placeholder="Search clients, projects…" Variant="Variant.Outlined" Margin="Margin.Dense"
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                      Class="d-none d-md-flex mr-3" Style="max-width:280px;" Immediate="false" />
+        <MudTooltip Text="View public showcase">
+            <MudIconButton Icon="@Icons.Material.Filled.Public" Color="Color.Inherit" Href="/" aria-label="Public site" />
+        </MudTooltip>
+        <MudBadge Content="_unread" Color="Color.Secondary" Overlap="true" Visible="_unread > 0" Bordered="true">
+            <MudIconButton Icon="@Icons.Material.Filled.Notifications" Color="Color.Inherit"
+                           Href="/admin/notifications" aria-label="Notifications" />
+        </MudBadge>
+        <MudIconButton Icon="@(ThemeState.IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                       Color="Color.Inherit" OnClick="ThemeState.Toggle" aria-label="Toggle theme" />
+        <MudAvatar Color="Color.Secondary" Size="Size.Small" Class="ml-2 va-monogram">VA</MudAvatar>
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="0" Variant="@DrawerVariant.Mini" OpenMiniOnHover="true"
+               ClipMode="DrawerClipMode.Always"
+               Style="border-right:1px solid var(--mud-palette-lines-default);">
+        <MudNavMenu Class="mt-3">
+            <MudText Typo="Typo.overline" Class="px-4 py-1" Style="color:var(--mud-palette-text-secondary);">Overview</MudText>
+            <MudNavLink Href="/admin" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.SpaceDashboard">Dashboard</MudNavLink>
+            <MudNavLink Href="/admin/analytics" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Insights">Analytics</MudNavLink>
+
+            <MudText Typo="Typo.overline" Class="px-4 py-1 mt-2" Style="color:var(--mud-palette-text-secondary);">Relationships</MudText>
+            <MudNavLink Href="/admin/clients" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Diamond">Clients</MudNavLink>
+            <MudNavLink Href="/admin/projects" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Architecture">Projects</MudNavLink>
+
+            <MudText Typo="Typo.overline" Class="px-4 py-1 mt-2" Style="color:var(--mud-palette-text-secondary);">Growth</MudText>
+            <MudNavLink Href="/admin/leads" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.FilterAlt">Leads</MudNavLink>
+            <MudNavLink Href="/admin/campaigns" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Campaign">Campaigns</MudNavLink>
+            <MudNavLink Href="/admin/requests" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.MarkEmailUnread">Requests</MudNavLink>
+            <MudNavLink Href="/admin/notifications" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Notifications">Notifications</MudNavLink>
+        </MudNavMenu>
+
+        <MudSpacer />
+        <div class="pa-4" style="border-top:1px solid var(--mud-palette-lines-default);">
+            <MudButton FullWidth="true" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       Href="/" Style="justify-content:flex-start;">Public Site</MudButton>
+        </div>
+    </MudDrawer>
+
+    <MudMainContent Style="background:var(--mud-palette-background);min-height:100vh;">
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 py-6">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+    private int _unread;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ThemeState.OnChange += Refresh;
+        _unread = await Notifications.GetUnreadCountAsync();
+    }
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+    public void Dispose() => ThemeState.OnChange -= Refresh;
+}

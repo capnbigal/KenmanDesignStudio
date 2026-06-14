@@ -1,0 +1,203 @@
+@page "/admin/clients/{Id:int}"
+@layout AdminLayout
+@inject ClientService ClientSvc
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>@(_client?.Name ?? "Client") · Kenman Design Studio</PageTitle>
+
+@if (_client is null)
+{
+    @if (_loaded)
+    {
+        <MudAlert Severity="Severity.Warning">Client not found. <MudLink Href="/admin/clients">Back to clients</MudLink></MudAlert>
+    }
+    else
+    {
+        <MudProgressLinear Color="Color.Secondary" Indeterminate="true" />
+    }
+}
+else
+{
+    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" Href="/admin/clients" Class="mb-3"
+               Style="color:var(--mud-palette-text-secondary);">All Clients</MudButton>
+
+    <!-- HEADER -->
+    <MudPaper Elevation="0" Class="pa-6 mb-4" Style="border:1px solid var(--mud-palette-lines-default);border-radius:6px;
+              background:linear-gradient(120deg,var(--mud-palette-surface),var(--mud-palette-background));">
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:1.5rem;align-items:flex-start;">
+            <div style="display:flex;gap:1.4rem;align-items:center;">
+                <MudAvatar Style="@($"background:{Format.TierColor(_client.Tier)};color:#10171A;width:84px;height:84px;font-size:2rem;")" Class="va-monogram">@_client.Monogram</MudAvatar>
+                <div>
+                    <div style="display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;">
+                        <MudText Typo="Typo.h3" Style="font-weight:600;">@_client.Name</MudText>
+                        <Pill Text="@_client.Tier.Display()" Color="@Format.TierColor(_client.Tier)" Icon="@Format.TierIcon(_client.Tier)" />
+                        @if (_client.IsRepeatClient)
+                        {
+                            <Pill Text="Repeat Client" Color="#3E8F63" Icon="@Icons.Material.Filled.Repeat" />
+                        }
+                    </div>
+                    <MudText Class="mt-1" Style="color:var(--mud-palette-text-secondary);">
+                        <MudIcon Icon="@Icons.Material.Filled.Business" Size="Size.Small" Style="vertical-align:middle;" /> @_client.Type.Display()
+                        &nbsp;·&nbsp; <MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" Style="vertical-align:middle;" /> @_client.City, @_client.Country
+                    </MudText>
+                    @if (!string.IsNullOrEmpty(_client.About))
+                    {
+                        <MudText Typo="Typo.body2" Class="mt-2" Style="max-width:560px;color:var(--mud-palette-text-secondary);">@_client.About</MudText>
+                    }
+                </div>
+            </div>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Call" OnClick="LogContact">Log Contact</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Edit" OnClick="Edit">Edit</MudButton>
+            </div>
+        </div>
+    </MudPaper>
+
+    <!-- KPI STRIP -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.4rem;">
+        <MiniStat Label="Lifetime Value" Value="@Format.Money(_client.LifetimeValue)" Accent="true" Icon="@Icons.Material.Filled.Diamond" />
+        <MiniStat Label="Open Pipeline" Value="@(_client.OpenPipelineValue > 0 ? Format.Money(_client.OpenPipelineValue) : "—")" Icon="@Icons.Material.Filled.Bolt" />
+        <MiniStat Label="Projects" Value="@_client.ProjectCount.ToString()" Icon="@Icons.Material.Filled.Architecture" />
+        <MiniStat Label="Completed" Value="@_client.CompletedProjectCount.ToString()" Icon="@Icons.Material.Filled.CheckCircle" />
+        <MiniStat Label="Client Since" Value="@_client.ClientSince.ToString("yyyy")" Icon="@Icons.Material.Filled.CalendarMonth" />
+        <MiniStat Label="Last Contact" Value="@(_client.DaysSinceLastContact is null ? "—" : $"{_client.DaysSinceLastContact}d")" Icon="@Icons.Material.Filled.History" />
+    </div>
+
+    <!-- INSIGHTS -->
+    @if (_insights.Count > 0)
+    {
+        <MudText Typo="Typo.overline" Style="color:var(--va-brass-deep);letter-spacing:2px;">Relationship Insights</MudText>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin:.5rem 0 1.6rem;">
+            @foreach (var ins in _insights)
+            {
+                <MudPaper Elevation="0" Class="pa-4 va-lift" Style="@($"border:1px solid var(--mud-palette-lines-default);border-left:3px solid {InsightColor(ins.Color)};border-radius:6px;")">
+                    <div style="display:flex;align-items:center;gap:.6rem;">
+                        <MudIcon Icon="@ins.Icon" Style="@($"color:{InsightColor(ins.Color)};")" />
+                        <MudText Typo="Typo.subtitle2" Style="font-weight:600;">@ins.Title</MudText>
+                    </div>
+                    <MudText Typo="Typo.caption" Class="mt-1" Style="color:var(--mud-palette-text-secondary);">@ins.Detail</MudText>
+                </MudPaper>
+            }
+        </div>
+    }
+
+    <MudGrid Spacing="3">
+        <!-- PROJECT HISTORY -->
+        <MudItem xs="12" md="8">
+            <MudPaper Elevation="0" Class="pa-5" Style="border:1px solid var(--mud-palette-lines-default);border-radius:6px;">
+                <MudText Typo="Typo.h6" Style="font-weight:500;" Class="mb-3">Project History</MudText>
+                @if (_client.Projects.Count == 0)
+                {
+                    <MudText Typo="Typo.body2" Style="color:var(--mud-palette-text-secondary);">No projects on record yet.</MudText>
+                }
+                @foreach (var p in _client.Projects.OrderByDescending(p => p.StartDate))
+                {
+                    <div class="va-lift" style="display:flex;align-items:center;gap:1rem;padding:.8rem;border-radius:6px;cursor:pointer;border-bottom:1px solid var(--mud-palette-lines-default);"
+                         @onclick="@(() => Nav.NavigateTo($"/portfolio/{p.Id}"))">
+                        <div style="width:56px;height:42px;border-radius:4px;overflow:hidden;flex-shrink:0;background:#0c1c18;">
+                            @if (p.PrimaryImage is not null)
+                            {
+                                <ProjectImage Path="@p.PrimaryImage.Path" Alt="@p.Name" />
+                            }
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <MudText Typo="Typo.body2" Style="font-weight:500;" Class="text-truncate">@p.Name</MudText>
+                            <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);">@CategoryCatalog.Get(p.Category).ShortName · @p.Year · @p.City</MudText>
+                        </div>
+                        <Pill Text="@p.Status.Display()" Color="@Format.StatusColor(p.Status)" />
+                        <MudText Style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--va-brass-deep);min-width:80px;text-align:right;">@Format.Money(p.Value)</MudText>
+                    </div>
+                }
+            </MudPaper>
+        </MudItem>
+
+        <!-- SIDEBAR -->
+        <MudItem xs="12" md="4">
+            <MudPaper Elevation="0" Class="pa-5 mb-3" Style="border:1px solid var(--mud-palette-lines-default);border-radius:6px;">
+                <MudText Typo="Typo.h6" Style="font-weight:500;" Class="mb-2">Contacts</MudText>
+                @foreach (var contact in _client.Contacts.OrderByDescending(c => c.IsPrimary))
+                {
+                    <div style="display:flex;align-items:center;gap:.7rem;padding:.5rem 0;">
+                        <MudAvatar Size="Size.Small" Color="Color.Primary">@(contact.FirstName.FirstOrDefault())@(contact.LastName.FirstOrDefault())</MudAvatar>
+                        <div style="flex:1;min-width:0;">
+                            <MudText Typo="Typo.body2" Style="font-weight:500;">@contact.FullName @if (contact.IsPrimary) {<MudIcon Icon="@Icons.Material.Filled.Star" Style="color:var(--va-brass);font-size:.9rem;vertical-align:middle;" />}</MudText>
+                            <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);">@contact.Title</MudText>
+                            <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);display:block;">@contact.Email</MudText>
+                        </div>
+                    </div>
+                }
+            </MudPaper>
+
+            <MudPaper Elevation="0" Class="pa-5" Style="border:1px solid var(--mud-palette-lines-default);border-radius:6px;">
+                <MudText Typo="Typo.h6" Style="font-weight:500;" Class="mb-3">Value by Discipline</MudText>
+                @foreach (var g in _client.Projects.Where(p => p.Status.IsBooked()).GroupBy(p => p.Category).OrderByDescending(g => g.Sum(p => p.Value)))
+                {
+                    var sum = g.Sum(p => p.Value);
+                    var pctOfMax = _maxCatValue > 0 ? (double)(sum / _maxCatValue) * 100 : 0;
+                    <div class="mb-3">
+                        <div style="display:flex;justify-content:space-between;">
+                            <MudText Typo="Typo.caption">@CategoryCatalog.Get(g.Key).ShortName</MudText>
+                            <MudText Typo="Typo.caption" Style="color:var(--va-brass-deep);">@Format.Money(sum)</MudText>
+                        </div>
+                        <div style="height:6px;background:var(--mud-palette-lines-default);border-radius:3px;overflow:hidden;margin-top:3px;">
+                            <div style="@($"width:{pctOfMax:0}%;height:100%;background:linear-gradient(90deg,#2F5D50,#C8A95B);")"></div>
+                        </div>
+                    </div>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Client? _client;
+    private List<ClientInsight> _insights = new();
+    private bool _loaded;
+    private decimal _maxCatValue;
+
+    protected override async Task OnParametersSetAsync() => await Load();
+
+    private async Task Load()
+    {
+        _client = await ClientSvc.GetByIdAsync(Id);
+        _loaded = true;
+        if (_client is not null)
+        {
+            _insights = await ClientSvc.GetInsightsAsync(_client);
+            _maxCatValue = _client.Projects.Where(p => p.Status.IsBooked())
+                .GroupBy(p => p.Category).Select(g => g.Sum(p => p.Value)).DefaultIfEmpty(0).Max();
+        }
+    }
+
+    private async Task Edit()
+    {
+        var parameters = new DialogParameters<ClientFormDialog> { { x => x.Existing, _client } };
+        var dialog = await DialogService.ShowAsync<ClientFormDialog>("Edit Client", parameters);
+        var result = await dialog.Result;
+        if (result is not null && !result.Canceled)
+        {
+            Snackbar.Add("Client updated", Severity.Success);
+            await Load();
+        }
+    }
+
+    private async Task LogContact()
+    {
+        await ClientSvc.LogContactAsync(Id);
+        Snackbar.Add("Contact logged — last contact set to today", Severity.Success);
+        await Load();
+    }
+
+    private static string InsightColor(string token) => token switch
+    {
+        "secondary" => "#C8A95B",
+        "primary" => "#2F5D50",
+        "warning" => "#C08A2E",
+        "info" => "#3C6E8F",
+        _ => "#8A94A6",
+    };
+}

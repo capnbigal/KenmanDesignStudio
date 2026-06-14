@@ -1,0 +1,30 @@
+@* A compact colour-coded status pill. *@
+<span style="display:inline-flex;align-items:center;gap:.35rem;padding:.18rem .6rem;border-radius:999px;
+             font-size:.7rem;font-weight:500;letter-spacing:.5px;line-height:1;
+             color:@Color;background:@(Tint(Color));border:1px solid @(Tint(Color, .35));white-space:nowrap;">
+    @if (!string.IsNullOrEmpty(Icon))
+    {
+        <MudIcon Icon="@Icon" Style="@($"font-size:.9rem;color:{Color};")" />
+    }
+    else if (Dot)
+    {
+        <span style="width:7px;height:7px;border-radius:50%;background:@Color;display:inline-block;"></span>
+    }
+    @Text
+</span>
+
+@code {
+    [Parameter, EditorRequired] public string Text { get; set; } = "";
+    [Parameter] public string Color { get; set; } = "#8A94A6";
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public bool Dot { get; set; } = true;
+
+    private static string Tint(string hex, double a = 0.14)
+    {
+        hex = hex.TrimStart('#');
+        var r = Convert.ToInt32(hex.Substring(0, 2), 16);
+        var g = Convert.ToInt32(hex.Substring(2, 2), 16);
+        var b = Convert.ToInt32(hex.Substring(4, 2), 16);
+        return $"rgba({r},{g},{b},{a.ToString(System.Globalization.CultureInfo.InvariantCulture)})";
+    }
+}

@@ -1,0 +1,57 @@
+@page "/testimonials"
+@inject ShowcaseService Showcase
+
+<PageTitle>Testimonials · Kenman Design Studio</PageTitle>
+
+<section class="va-section-deep" style="padding:8rem 0 3rem;">
+    <MudContainer MaxWidth="MaxWidth.Large">
+        <div class="va-eyebrow" style="color:#C8A95B;">In Their Words</div>
+        <MudText Typo="Typo.h2" Class="mt-2" Style="color:#F4F1EA;max-width:720px;">Trusted by the world's most discerning clients.</MudText>
+    </MudContainer>
+</section>
+
+<section class="py-12" style="background:var(--mud-palette-background);">
+    <MudContainer MaxWidth="MaxWidth.Large">
+        <MudGrid Spacing="4">
+            @foreach (var t in _testimonials)
+            {
+                <MudItem xs="12" md="6">
+                    <MudPaper Elevation="0" Class="pa-7 va-lift" Style="height:100%;border:1px solid var(--mud-palette-lines-default);border-radius:8px;position:relative;">
+                        <MudIcon Icon="@Icons.Material.Filled.FormatQuote" Style="color:var(--va-brass);font-size:2.4rem;opacity:.5;" />
+                        <MudText Typo="Typo.h6" Style="font-family:'Cormorant Garamond',serif;font-weight:500;font-style:italic;line-height:1.5;margin:.5rem 0 1.5rem;">
+                            “@t.Quote”
+                        </MudText>
+                        <div style="display:flex;align-items:center;gap:1rem;">
+                            <MudAvatar Style="background:var(--va-emerald);color:#F4F1EA;" Class="va-monogram">@t.Monogram</MudAvatar>
+                            <div style="flex:1;">
+                                <MudText Typo="Typo.body2" Style="font-weight:600;">@t.AuthorName</MudText>
+                                <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);">@t.AuthorTitle, @t.Company</MudText>
+                            </div>
+                            <MudRating ReadOnly="true" SelectedValue="t.Rating" Size="Size.Small" Color="Color.Secondary" />
+                        </div>
+                        @if (t.Category is not null)
+                        {
+                            <div style="margin-top:1rem;">
+                                <Pill Text="@CategoryCatalog.Get(t.Category.Value).ShortName" Color="@CategoryCatalog.Get(t.Category.Value).GradientTo" Dot="false" />
+                            </div>
+                        }
+                    </MudPaper>
+                </MudItem>
+            }
+        </MudGrid>
+    </MudContainer>
+</section>
+
+<section class="va-section-stone py-12">
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="text-center">
+        <MudText Typo="Typo.h4" Style="font-family:'Cormorant Garamond',serif;">Join our roster of landmark clients</MudText>
+        <MudButton Class="mt-4" Variant="Variant.Filled" Size="Size.Large" Href="/consultation"
+                   Style="background:#16302B;color:#F4F1EA;" EndIcon="@Icons.Material.Filled.ArrowForward">Request a Consultation</MudButton>
+    </MudContainer>
+</section>
+
+@code {
+    private List<Testimonial> _testimonials = new();
+
+    protected override async Task OnInitializedAsync() => _testimonials = await Showcase.GetTestimonialsAsync();
+}

@@ -1,0 +1,87 @@
+@inject LeadService LeadSvc
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="font-weight:500;">@(IsNew ? "New Lead" : "Edit Lead")</MudText>
+    </TitleContent>
+    <DialogContent>
+        <div style="min-width:min(560px,82vw);">
+            <div style="display:flex;gap:1rem;" class="mb-3">
+                <MudTextField @bind-Value="_model.ContactName" Label="Contact name" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                <MudTextField @bind-Value="_model.CompanyName" Label="Company" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </div>
+            <div style="display:flex;gap:1rem;" class="mb-3">
+                <MudTextField @bind-Value="_model.Email" Label="Email" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                <MudTextField @bind-Value="_model.Phone" Label="Phone" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </div>
+            <div style="display:flex;gap:1rem;" class="mb-3">
+                <MudSelect @bind-Value="_model.Source" Label="Source" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var s in Enum.GetValues<LeadSource>())
+                    {
+                        <MudSelectItem Value="s">@s.Display()</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudSelect @bind-Value="_model.Status" Label="Status" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var s in Enum.GetValues<LeadStatus>())
+                    {
+                        <MudSelectItem Value="s">@s.Display()</MudSelectItem>
+                    }
+                </MudSelect>
+            </div>
+            <div style="display:flex;gap:1rem;" class="mb-3">
+                <MudSelect @bind-Value="_model.InterestCategory" Label="Interest" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var cat in CategoryCatalog.All)
+                    {
+                        <MudSelectItem Value="cat.Category">@cat.ShortName</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudSelect @bind-Value="_model.Region" Label="Region" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var r in Regions)
+                    {
+                        <MudSelectItem Value="r">@r</MudSelectItem>
+                    }
+                </MudSelect>
+            </div>
+            <MudNumericField @bind-Value="_model.EstimatedValue" Label="Estimated value (USD)" Variant="Variant.Outlined" Margin="Margin.Dense" Format="N0" Class="mb-3" />
+            <MudTextField @bind-Value="_model.Notes" Label="Notes" Variant="Variant.Outlined" Margin="Margin.Dense" Lines="2" />
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="Save">@(IsNew ? "Create Lead" : "Save Changes")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
+    [Parameter] public Lead? Existing { get; set; }
+
+    private Lead _model = new();
+    private bool IsNew => Existing is null;
+
+    private static readonly string[] Regions =
+        { "Northeast", "West Coast", "Southeast", "Mountain West", "International" };
+
+    protected override void OnInitialized()
+    {
+        _model = Existing is null
+            ? new Lead { Source = LeadSource.Referral, Status = LeadStatus.New, InterestCategory = ProjectCategory.PrivateEstate, Region = "Northeast", ReceivedDate = DateTime.UtcNow }
+            : new Lead
+            {
+                Id = Existing.Id, ContactName = Existing.ContactName, CompanyName = Existing.CompanyName,
+                Email = Existing.Email, Phone = Existing.Phone, Source = Existing.Source, Status = Existing.Status,
+                InterestCategory = Existing.InterestCategory, Region = Existing.Region,
+                EstimatedValue = Existing.EstimatedValue, Notes = Existing.Notes, ReceivedDate = Existing.ReceivedDate,
+            };
+    }
+
+    private async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(_model.ContactName)) return;
+        if (IsNew) await LeadSvc.CreateAsync(_model);
+        else await LeadSvc.UpdateAsync(_model);
+        Dialog.Close(DialogResult.Ok(true));
+    }
+
+    private void Cancel() => Dialog.Cancel();
+}

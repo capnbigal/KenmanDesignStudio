@@ -1,0 +1,246 @@
+@page "/admin"
+@layout AdminLayout
+@using ApexCharts
+@using Color = MudBlazor.Color
+@using Size = MudBlazor.Size
+@using Format = KenmanDesignStudio.Web.Services.Format
+@implements IDisposable
+@inject DashboardService DashboardSvc
+@inject NotificationService Notifications
+@inject ClientService Clients
+@inject ThemeState ThemeState
+
+<PageTitle>Command Center · Kenman Design Studio</PageTitle>
+
+@if (_data is null)
+{
+    <MudProgressLinear Color="Color.Secondary" Indeterminate="true" />
+}
+else
+{
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;margin-bottom:1.6rem;">
+        <div>
+            <div class="va-eyebrow">Command Center</div>
+            <MudText Typo="Typo.h3" Class="mt-1" Style="font-weight:600;">Good @Greeting, Operator</MudText>
+            <MudText Typo="Typo.body2" Style="color:var(--mud-palette-text-secondary);">@DateTime.Now.ToString("dddd, MMMM d, yyyy") · Studio performance at a glance</MudText>
+        </div>
+        <div style="display:flex;gap:.6rem;">
+            <MudButton Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.Insights" Href="/admin/analytics">Analytics</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.PersonAdd" Href="/admin/clients">New Client</MudButton>
+        </div>
+    </div>
+
+    <!-- KPI ROW -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem;margin-bottom:1.2rem;">
+        <KpiTile Label="Active Clients" Value="@_data.ActiveClients.ToString()" Icon="@Icons.Material.Filled.Diamond"
+                 Caption="@($"{_data.TotalClients} total relationships")" />
+        <KpiTile Label="Open Pipeline" Value="@Format.Money(_data.PipelineValue)" Icon="@Icons.Material.Filled.Bolt"
+                 ValueColor="var(--va-brass-deep)" Caption="Lead &amp; proposed value" TrendUp="true" />
+        <KpiTile Label="Win Rate" Value="@Format.Percent(_data.WinRate)" Icon="@Icons.Material.Filled.EmojiEvents"
+                 Caption="Across decided leads" TrendUp="true" />
+        <KpiTile Label="YTD Revenue" Value="@Format.Money(_data.YtdRevenue)" Icon="@Icons.Material.Filled.TrendingUp"
+                 ValueColor="var(--va-brass-deep)" Caption="@($"{DateTime.Now.Year} booked")" TrendUp="true" />
+        <KpiTile Label="Open Requests" Value="@_data.OpenRequests.ToString()" Icon="@Icons.Material.Filled.MarkEmailUnread"
+                 Caption="Awaiting response" />
+    </div>
+
+    <MudGrid Spacing="3">
+        <!-- Revenue trend -->
+        <MudItem xs="12" lg="8">
+            <ChartCard Eyebrow="Trailing 18 months" Title="Booked Revenue Trend">
+                <HeaderRight>
+                    <MudText Style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;color:var(--va-brass-deep);">@Format.Money(_data.TotalBookedValue)</MudText>
+                </HeaderRight>
+                <ChildContent>
+                    <ApexChart TItem="MonthlyValue" Options="_areaOptions" Height="300" @ref="_areaChart">
+                        <ApexPointSeries TItem="MonthlyValue" Items="_data.RevenueTrend" Name="Booked Revenue"
+                                         SeriesType="SeriesType.Area"
+                                         XValue="@(e => e.Label)" YValue="@(e => e.Value)" />
+                    </ApexChart>
+                </ChildContent>
+            </ChartCard>
+        </MudItem>
+
+        <!-- Projects by status -->
+        <MudItem xs="12" sm="6" lg="4">
+            <ChartCard Eyebrow="Pipeline" Title="Projects by Stage">
+                <ApexChart TItem="StatusCount" Options="_donutOptions" Height="300">
+                    <ApexPointSeries TItem="StatusCount" Items="_statusData" Name="Projects"
+                                     SeriesType="SeriesType.Donut"
+                                     XValue="@(e => e.Label)" YValue="@(e => e.Count)" />
+                </ApexChart>
+            </ChartCard>
+        </MudItem>
+
+        <!-- Leads by source -->
+        <MudItem xs="12" sm="6" lg="5">
+            <ChartCard Eyebrow="Attribution" Title="Leads by Source">
+                <ApexChart TItem="SourceCount" Options="_barOptions" Height="300">
+                    <ApexPointSeries TItem="SourceCount" Items="_data.LeadsBySource" Name="Leads"
+                                     SeriesType="SeriesType.Bar"
+                                     XValue="@(e => e.Label)" YValue="@(e => e.Count)" />
+                </ApexChart>
+            </ChartCard>
+        </MudItem>
+
+        <!-- Revenue by category -->
+        <MudItem xs="12" lg="7">
+            <ChartCard Eyebrow="Disciplines" Title="Booked Revenue by Category">
+                <ApexChart TItem="CategoryValue" Options="_catOptions" Height="300">
+                    <ApexPointSeries TItem="CategoryValue" Items="_data.RevenueByCategory" Name="Revenue"
+                                     SeriesType="SeriesType.Bar"
+                                     XValue="@(e => e.Label)" YValue="@(e => e.Value)" />
+                </ApexChart>
+            </ChartCard>
+        </MudItem>
+
+        <!-- Top clients -->
+        <MudItem xs="12" lg="6">
+            <MudPaper Elevation="0" Class="pa-5" Style="height:100%;border:1px solid var(--mud-palette-lines-default);border-radius:6px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
+                    <div>
+                        <MudText Typo="Typo.overline" Style="color:var(--va-brass-deep);letter-spacing:2px;">By Lifetime Value</MudText>
+                        <MudText Typo="Typo.h6" Style="font-weight:500;">Top Relationships</MudText>
+                    </div>
+                    <MudButton Variant="Variant.Text" Size="Size.Small" Href="/admin/clients" EndIcon="@Icons.Material.Filled.ArrowForward">All</MudButton>
+                </div>
+                <MudList T="string" Dense="true">
+                    @foreach (var c in _topClients)
+                    {
+                        <MudListItem T="string" Href="@($"/admin/clients/{c.Id}")">
+                            <div style="display:flex;align-items:center;gap:.8rem;">
+                                <MudAvatar Size="Size.Small" Style="@($"background:{Format.TierColor(c.Tier)};color:#10171A;")" Class="va-monogram">@c.Monogram</MudAvatar>
+                                <div style="flex:1;min-width:0;">
+                                    <MudText Typo="Typo.body2" Style="font-weight:500;" Class="text-truncate">@c.Name</MudText>
+                                    <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);">@c.Tier.Display() · @c.City</MudText>
+                                </div>
+                                <MudText Style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--va-brass-deep);">@Format.Money(c.LifetimeValue)</MudText>
+                            </div>
+                        </MudListItem>
+                    }
+                </MudList>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Activity feed -->
+        <MudItem xs="12" lg="6">
+            <MudPaper Elevation="0" Class="pa-5" Style="height:100%;border:1px solid var(--mud-palette-lines-default);border-radius:6px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
+                    <div>
+                        <MudText Typo="Typo.overline" Style="color:var(--va-brass-deep);letter-spacing:2px;">Live Feed</MudText>
+                        <MudText Typo="Typo.h6" Style="font-weight:500;">Recent Activity</MudText>
+                    </div>
+                    <MudButton Variant="Variant.Text" Size="Size.Small" Href="/admin/notifications" EndIcon="@Icons.Material.Filled.ArrowForward">All</MudButton>
+                </div>
+                <MudList T="string" Dense="true">
+                    @foreach (var n in _recent)
+                    {
+                        <MudListItem T="string" Href="@(n.Link ?? "/admin/notifications")">
+                            <div style="display:flex;align-items:flex-start;gap:.8rem;">
+                                <MudIcon Icon="@NotifIcon(n.Type)" Style="@($"color:{NotifColor(n.Type)};margin-top:2px;")" Size="Size.Small" />
+                                <div style="flex:1;">
+                                    <MudText Typo="Typo.body2" Style="font-weight:500;">@n.Title</MudText>
+                                    <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);">@n.Message</MudText>
+                                </div>
+                                <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);white-space:nowrap;">@Ago(n.OccurredAt)</MudText>
+                            </div>
+                        </MudListItem>
+                    }
+                </MudList>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private DashboardData? _data;
+    private List<StatusCount> _statusData = new();
+    private List<Client> _topClients = new();
+    private List<Notification> _recent = new();
+    private ApexChart<MonthlyValue>? _areaChart;
+
+    private ApexChartOptions<MonthlyValue> _areaOptions = new();
+    private ApexChartOptions<StatusCount> _donutOptions = new();
+    private ApexChartOptions<SourceCount> _barOptions = new();
+    private ApexChartOptions<CategoryValue> _catOptions = new();
+
+    private string Greeting => DateTime.Now.Hour switch { < 12 => "morning", < 17 => "afternoon", _ => "evening" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        ThemeState.OnChange += OnThemeChanged;
+        _data = await DashboardSvc.GetAsync();
+        _statusData = _data.ProjectsByStatus.Where(s => s.Count > 0).ToList();
+        _recent = await Notifications.GetListAsync(6);
+        var clients = await Clients.GetListAsync();
+        _topClients = clients.Take(6).ToList();
+        BuildOptions();
+    }
+
+    private void OnThemeChanged()
+    {
+        BuildOptions();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void BuildOptions()
+    {
+        var dark = ThemeState.IsDarkMode;
+
+        _areaOptions = ChartTheme.Base<MonthlyValue>(dark);
+        _areaOptions.Colors = new() { "#C8A95B" };
+        _areaOptions.Stroke = new Stroke { Curve = Curve.Smooth, Width = 3 };
+        _areaOptions.Fill = new Fill
+        {
+            Type = FillType.Gradient,
+            Gradient = new FillGradient { ShadeIntensity = 1, OpacityFrom = 0.45, OpacityTo = 0.05, Stops = new List<double> { 0, 95 } }
+        };
+        _areaOptions.Yaxis = new List<YAxis> { new() { Labels = new YAxisLabels { Formatter = "function(v){return '$'+(v/1000000).toFixed(1)+'M'}" } } };
+
+        _donutOptions = ChartTheme.Base<StatusCount>(dark);
+        _donutOptions.Colors = _statusData.Select(s => Format.StatusColor(s.Status)).ToList();
+        _donutOptions.Legend = new Legend { Position = LegendPosition.Bottom };
+        _donutOptions.PlotOptions = new PlotOptions { Pie = new PlotOptionsPie { Donut = new PlotOptionsDonut { Size = "62%" } } };
+
+        _barOptions = ChartTheme.Base<SourceCount>(dark);
+        _barOptions.Colors = new() { "#2F5D50" };
+        _barOptions.PlotOptions = new PlotOptions { Bar = new PlotOptionsBar { Horizontal = true, BorderRadius = 4, ColumnWidth = "55%" } };
+
+        _catOptions = ChartTheme.Base<CategoryValue>(dark);
+        _catOptions.Colors = new() { "#3C6E8F" };
+        _catOptions.PlotOptions = new PlotOptions { Bar = new PlotOptionsBar { Horizontal = false, BorderRadius = 4, ColumnWidth = "50%", Distributed = true } };
+        _catOptions.Colors = ChartTheme.Palette;
+        _catOptions.Legend = new Legend { Show = false };
+        _catOptions.Yaxis = new List<YAxis> { new() { Labels = new YAxisLabels { Formatter = "function(v){return '$'+(v/1000000).toFixed(0)+'M'}" } } };
+    }
+
+    private static string NotifIcon(NotificationType t) => t switch
+    {
+        NotificationType.Lead => Icons.Material.Filled.FilterAlt,
+        NotificationType.Project => Icons.Material.Filled.Architecture,
+        NotificationType.Client => Icons.Material.Filled.Diamond,
+        NotificationType.Award => Icons.Material.Filled.EmojiEvents,
+        NotificationType.Request => Icons.Material.Filled.MarkEmailUnread,
+        _ => Icons.Material.Filled.Notifications,
+    };
+
+    private static string NotifColor(NotificationType t) => t switch
+    {
+        NotificationType.Lead => "#6B5BA8",
+        NotificationType.Project => "#3C6E8F",
+        NotificationType.Client => "#C8A95B",
+        NotificationType.Award => "#C8702E",
+        NotificationType.Request => "#3E8F63",
+        _ => "#8A94A6",
+    };
+
+    private static string Ago(DateTime dt)
+    {
+        var span = DateTime.UtcNow - dt;
+        if (span.TotalHours < 1) return $"{(int)span.TotalMinutes}m";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours}h";
+        return $"{(int)span.TotalDays}d";
+    }
+
+    public void Dispose() => ThemeState.OnChange -= OnThemeChanged;
+}

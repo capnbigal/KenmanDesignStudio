@@ -1,0 +1,168 @@
+@page "/admin/clients"
+@layout AdminLayout
+@inject ClientService ClientSvc
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>Clients · Kenman Design Studio</PageTitle>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem;">
+    <div>
+        <div class="va-eyebrow">Relationships</div>
+        <MudText Typo="Typo.h3" Class="mt-1" Style="font-weight:600;">Client Portfolio</MudText>
+        <MudText Typo="Typo.body2" Style="color:var(--mud-palette-text-secondary);">@_clients.Count clients · @Format.Money(_clients.Sum(c => c.LifetimeValue)) lifetime value</MudText>
+    </div>
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="CreateClient">New Client</MudButton>
+</div>
+
+<!-- Tier summary -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.4rem;">
+    @foreach (var tier in new[] { ClientTier.Signature, ClientTier.Premier, ClientTier.Standard })
+    {
+        var group = _clients.Where(c => c.Tier == tier).ToList();
+        <MudPaper Elevation="0" Class="pa-4 va-lift" Style="@($"border:1px solid var(--mud-palette-lines-default);border-left:3px solid {Format.TierColor(tier)};border-radius:6px;cursor:pointer;")"
+                  @onclick="@(() => _tierFilter = _tierFilter == tier ? null : tier)">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <MudText Typo="Typo.overline" Style="@($"color:{Format.TierColor(tier)};letter-spacing:2px;")">@tier.Display()</MudText>
+                <MudIcon Icon="@Format.TierIcon(tier)" Style="@($"color:{Format.TierColor(tier)};")" Size="Size.Small" />
+            </div>
+            <MudText Style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:600;">@group.Count</MudText>
+            <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);">@Format.Money(group.Sum(c => c.LifetimeValue)) combined</MudText>
+        </MudPaper>
+    }
+</div>
+
+<MudPaper Elevation="0" Style="border:1px solid var(--mud-palette-lines-default);border-radius:6px;">
+    <MudDataGrid T="Client" Items="Filtered" Dense="true" Hover="true" Filterable="false" SortMode="SortMode.Multiple"
+                 RowClick="@(args => Nav.NavigateTo($"/admin/clients/{args.Item.Id}"))" RowStyle="cursor:pointer;"
+                 Class="pa-2">
+        <ToolBarContent>
+            @if (_tierFilter is not null)
+            {
+                <MudChip T="string" Color="Color.Secondary" OnClose="@(() => _tierFilter = null)" Class="mr-2">@_tierFilter.Value.Display() tier</MudChip>
+            }
+            <MudSpacer />
+            <MudTextField @bind-Value="_search" Placeholder="Search clients…" Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small" Margin="Margin.Dense"
+                          Variant="Variant.Outlined" Style="max-width:300px;" Immediate="true" Clearable="true" />
+        </ToolBarContent>
+        <Columns>
+            <TemplateColumn Title="Client" SortBy="@(c => c.Name)">
+                <CellTemplate>
+                    <div style="display:flex;align-items:center;gap:.8rem;">
+                        <MudAvatar Size="Size.Medium" Style="@($"background:{Format.TierColor(context.Item.Tier)};color:#10171A;")" Class="va-monogram">@context.Item.Monogram</MudAvatar>
+                        <div>
+                            <MudText Typo="Typo.body2" Style="font-weight:500;">@context.Item.Name</MudText>
+                            <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);">@context.Item.Type.Display()</MudText>
+                        </div>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Location" SortBy="@(c => c.City)">
+                <CellTemplate>
+                    <MudText Typo="Typo.body2">@context.Item.City</MudText>
+                    <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);">@context.Item.Region</MudText>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Tier" SortBy="@(c => (int)c.Tier)">
+                <CellTemplate>
+                    <Pill Text="@context.Item.Tier.Display()" Color="@Format.TierColor(context.Item.Tier)" />
+                </CellTemplate>
+            </TemplateColumn>
+            <PropertyColumn Property="@(c => c.ProjectCount)" Title="Projects" />
+            <TemplateColumn Title="Lifetime Value" SortBy="@(c => c.LifetimeValue)">
+                <CellTemplate>
+                    <MudText Style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--va-brass-deep);">@Format.Money(context.Item.LifetimeValue)</MudText>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Open Pipeline" SortBy="@(c => c.OpenPipelineValue)">
+                <CellTemplate>
+                    <MudText Typo="Typo.body2">@(context.Item.OpenPipelineValue > 0 ? Format.Money(context.Item.OpenPipelineValue) : "—")</MudText>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Last Contact" SortBy="@(c => c.DaysSinceLastContact ?? int.MaxValue)">
+                <CellTemplate>
+                    @{
+                        var days = context.Item.DaysSinceLastContact;
+                    }
+                    @if (days is >= 90)
+                    {
+                        <Pill Text="@($"{days}d ago")" Color="#C08A2E" Icon="@Icons.Material.Filled.Warning" />
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Style="color:var(--mud-palette-text-secondary);">@(days is null ? "—" : $"{days}d ago")</MudText>
+                    }
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="" Sortable="false">
+                <CellTemplate>
+                    <div @onclick:stopPropagation="true">
+                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                            <MudMenuItem Icon="@Icons.Material.Filled.Visibility" OnClick="@(() => Nav.NavigateTo($"/admin/clients/{context.Item.Id}"))">View 360</MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Edit" OnClick="@(() => EditClient(context.Item))">Edit</MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Delete" OnClick="@(() => DeleteClient(context.Item))">Archive</MudMenuItem>
+                        </MudMenu>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="Client" />
+        </PagerContent>
+    </MudDataGrid>
+</MudPaper>
+
+@code {
+    private List<Client> _clients = new();
+    private string _search = "";
+    private ClientTier? _tierFilter;
+
+    private IEnumerable<Client> Filtered => _clients.Where(c =>
+        (_tierFilter is null || c.Tier == _tierFilter) &&
+        (string.IsNullOrWhiteSpace(_search) ||
+         c.Name.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+         c.City.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+         c.Type.Display().Contains(_search, StringComparison.OrdinalIgnoreCase)));
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    private async Task Load() => _clients = await ClientSvc.GetListAsync();
+
+    private async Task CreateClient()
+    {
+        var dialog = await DialogService.ShowAsync<ClientFormDialog>("New Client");
+        var result = await dialog.Result;
+        if (result is not null && !result.Canceled)
+        {
+            Snackbar.Add("Client created", Severity.Success);
+            await Load();
+        }
+    }
+
+    private async Task EditClient(Client c)
+    {
+        var parameters = new DialogParameters<ClientFormDialog> { { x => x.Existing, c } };
+        var dialog = await DialogService.ShowAsync<ClientFormDialog>("Edit Client", parameters);
+        var result = await dialog.Result;
+        if (result is not null && !result.Canceled)
+        {
+            Snackbar.Add("Client updated", Severity.Success);
+            await Load();
+        }
+    }
+
+    private async Task DeleteClient(Client c)
+    {
+        var ok = await DialogService.ShowMessageBoxAsync("Archive client",
+            $"Archive {c.Name}? This hides the client from active lists (soft delete).",
+            yesText: "Archive", cancelText: "Cancel");
+        if (ok == true)
+        {
+            await ClientSvc.DeleteAsync(c.Id);
+            Snackbar.Add("Client archived", Severity.Info);
+            await Load();
+        }
+    }
+}

@@ -1,0 +1,74 @@
+@inject ClientService Clients
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="font-weight:500;">@(IsNew ? "New Client" : "Edit Client")</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form" Style="min-width:min(520px,80vw);">
+            <MudTextField @bind-Value="_model.Name" Label="Client name" Required="true"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
+            <div style="display:flex;gap:1rem;" class="mb-3">
+                <MudSelect @bind-Value="_model.Type" Label="Type" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var t in Enum.GetValues<ClientType>())
+                    {
+                        <MudSelectItem Value="t">@t.Display()</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudTextField @bind-Value="_model.Monogram" Label="Monogram" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="4" Style="max-width:120px;" />
+            </div>
+            <div style="display:flex;gap:1rem;" class="mb-3">
+                <MudTextField @bind-Value="_model.City" Label="City" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                <MudSelect @bind-Value="_model.Region" Label="Region" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var r in Regions)
+                    {
+                        <MudSelectItem Value="r">@r</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudTextField @bind-Value="_model.Country" Label="Country" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width:140px;" />
+            </div>
+            <MudTextField @bind-Value="_model.Website" Label="Website" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
+            <MudTextField @bind-Value="_model.About" Label="About" Variant="Variant.Outlined" Margin="Margin.Dense"
+                          Lines="3" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="Save">@(IsNew ? "Create Client" : "Save Changes")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
+    [Parameter] public Client? Existing { get; set; }
+
+    private MudForm _form = default!;
+    private Client _model = new();
+    private bool IsNew => Existing is null;
+
+    private static readonly string[] Regions =
+        { "Northeast", "West Coast", "Southeast", "Mountain West", "International" };
+
+    protected override void OnInitialized()
+    {
+        _model = Existing is null
+            ? new Client { Type = ClientType.Developer, Region = "Northeast", Country = "USA", ClientSince = DateTime.UtcNow, LastContactDate = DateTime.UtcNow }
+            : new Client
+            {
+                Id = Existing.Id, Name = Existing.Name, Type = Existing.Type, Monogram = Existing.Monogram,
+                City = Existing.City, Region = Existing.Region, Country = Existing.Country,
+                Website = Existing.Website, About = Existing.About, ClientSince = Existing.ClientSince,
+                LastContactDate = Existing.LastContactDate,
+            };
+    }
+
+    private async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(_model.Name)) return;
+        if (IsNew) await Clients.CreateAsync(_model);
+        else await Clients.UpdateAsync(_model);
+        Dialog.Close(DialogResult.Ok(true));
+    }
+
+    private void Cancel() => Dialog.Cancel();
+}

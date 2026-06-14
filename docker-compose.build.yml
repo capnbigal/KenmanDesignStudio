@@ -1,0 +1,14 @@
+# Override for building the image locally instead of pulling from GHCR.
+# Use when iterating on the Dockerfile before merging to main.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml build app
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d app
+#
+# The droplet should NOT use this file — it pulls the prebuilt image from GHCR.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: kenmandesignstudio:${APP_TAG:-local}

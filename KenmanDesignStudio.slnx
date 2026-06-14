@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/KenmanDesignStudio.Web/KenmanDesignStudio.Web.csproj" />
+    <Project Path="src/KenmanDesignStudio.Core/KenmanDesignStudio.Core.csproj" />
+    <Project Path="src/KenmanDesignStudio.Infrastructure/KenmanDesignStudio.Infrastructure.csproj" />
+  </Folder>
+</Solution>

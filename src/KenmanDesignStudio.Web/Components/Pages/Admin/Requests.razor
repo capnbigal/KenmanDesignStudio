@@ -1,0 +1,93 @@
+@page "/admin/requests"
+@layout AdminLayout
+@inject RequestService RequestSvc
+@inject ISnackbar Snackbar
+
+<PageTitle>Requests · Kenman Design Studio</PageTitle>
+
+<div style="margin-bottom:1.3rem;">
+    <div class="va-eyebrow">Inbound</div>
+    <MudText Typo="Typo.h3" Class="mt-1" Style="font-weight:600;">Consultation Requests</MudText>
+    <MudText Typo="Typo.body2" Style="color:var(--mud-palette-text-secondary);">@_requests.Count(r => r.Status == RequestStatus.New) new · @_requests.Count total enquiries</MudText>
+</div>
+
+<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.2rem;">
+    <MudChip T="string" Variant="@(_filter is null ? Variant.Filled : Variant.Outlined)" OnClick="@(() => _filter = null)">All</MudChip>
+    @foreach (var s in Enum.GetValues<RequestStatus>())
+    {
+        <MudChip T="string" Variant="@(_filter == s ? Variant.Filled : Variant.Outlined)"
+                 Style="@(_filter == s ? $"background:{Format.RequestStatusColor(s)};color:#fff;" : "")"
+                 OnClick="@(() => _filter = s)">@s.Display() (@_requests.Count(r => r.Status == s))</MudChip>
+    }
+</div>
+
+@foreach (var r in Filtered)
+{
+    <MudPaper Elevation="0" Class="pa-4 mb-3 va-lift" Style="@($"border:1px solid var(--mud-palette-lines-default);border-left:3px solid {Format.RequestStatusColor(r.Status)};border-radius:6px;")">
+        <div style="display:flex;gap:1rem;align-items:flex-start;">
+            <MudAvatar Color="Color.Primary" Class="va-monogram">@Initials(r.Name)</MudAvatar>
+            <div style="flex:1;min-width:0;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.5rem;">
+                    <div>
+                        <MudText Typo="Typo.subtitle1" Style="font-weight:500;">@r.Name @if (!string.IsNullOrEmpty(r.Company)) {<span style="color:var(--mud-palette-text-secondary);font-weight:300;">· @r.Company</span>}</MudText>
+                        <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);">@r.Email · @r.Phone</MudText>
+                    </div>
+                    <div style="display:flex;gap:.5rem;align-items:center;">
+                        <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);">@Ago(r.SubmittedAt)</MudText>
+                        <MudMenu Dense="true" ActivationEvent="@MouseEvent.LeftClick">
+                            <ActivatorContent><Pill Text="@r.Status.Display()" Color="@Format.RequestStatusColor(r.Status)" /></ActivatorContent>
+                            <ChildContent>
+                                @foreach (var s in Enum.GetValues<RequestStatus>())
+                                {
+                                    <MudMenuItem OnClick="@(() => SetStatus(r, s))">Mark @s.Display()</MudMenuItem>
+                                }
+                            </ChildContent>
+                        </MudMenu>
+                    </div>
+                </div>
+                <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.6rem 0;">
+                    <Pill Text="@CategoryCatalog.Get(r.InterestCategory).ShortName" Color="@CategoryCatalog.Get(r.InterestCategory).GradientTo" Dot="false" />
+                    <Pill Text="@r.Region" Color="#3C6E8F" Dot="false" />
+                    <Pill Text="@r.BudgetBand" Color="#A8842F" Icon="@Icons.Material.Filled.Payments" />
+                </div>
+                <MudText Typo="Typo.body2" Style="color:var(--mud-palette-text-secondary);">@r.Message</MudText>
+            </div>
+        </div>
+    </MudPaper>
+}
+
+@if (!Filtered.Any())
+{
+    <MudText Typo="Typo.body2" Style="color:var(--mud-palette-text-secondary);" Class="pa-6 text-center">No requests in this view.</MudText>
+}
+
+@code {
+    private List<Request> _requests = new();
+    private RequestStatus? _filter;
+
+    private IEnumerable<Request> Filtered => _filter is null ? _requests : _requests.Where(r => r.Status == _filter);
+
+    protected override async Task OnInitializedAsync() => await Load();
+    private async Task Load() => _requests = await RequestSvc.GetListAsync();
+
+    private async Task SetStatus(Request r, RequestStatus s)
+    {
+        await RequestSvc.SetStatusAsync(r.Id, s);
+        Snackbar.Add($"Request marked {s.Display()}", Severity.Success);
+        await Load();
+    }
+
+    private static string Initials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2 ? $"{parts[0][0]}{parts[1][0]}" : name[..Math.Min(2, name.Length)];
+    }
+
+    private static string Ago(DateTime dt)
+    {
+        var span = DateTime.UtcNow - dt;
+        if (span.TotalHours < 1) return $"{(int)span.TotalMinutes}m ago";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours}h ago";
+        return $"{(int)span.TotalDays}d ago";
+    }
+}

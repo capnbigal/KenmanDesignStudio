@@ -1,0 +1,23 @@
+@inject NavigationManager Nav
+
+<div class="va-gallery-card va-lift" style="@($"aspect-ratio:{Aspect};")" @onclick="Navigate">
+    <ProjectImage Path="@(Project.PrimaryImage?.Path ?? ImageResolver.Placeholder)" Alt="@Project.Name" />
+    <div class="va-gallery-overlay">
+        <span class="va-cat">@CategoryCatalog.Get(Project.Category).ShortName</span>
+        <MudText Style="font-family:'Cormorant Garamond',serif;font-size:1.45rem;font-weight:600;line-height:1.1;color:#F4F1EA;">
+            @Project.Name
+        </MudText>
+        <div class="va-gallery-meta">
+            <span>@Project.Location@(string.IsNullOrEmpty(Project.Location) ? "" : " · ")@Project.Year</span>
+            <span style="color:#C8A95B;font-weight:500;">@Format.Money(Project.Value)</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Project Project { get; set; } = default!;
+    [Parameter] public string Aspect { get; set; } = "4/3";
+    [Parameter] public string HrefBase { get; set; } = "/portfolio";
+
+    private void Navigate() => Nav.NavigateTo($"{HrefBase}/{Project.Id}");
+}

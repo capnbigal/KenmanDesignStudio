@@ -1,0 +1,161 @@
+@page "/admin/projects"
+@layout AdminLayout
+@inject ProjectService ProjectSvc
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>Projects · Kenman Design Studio</PageTitle>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;margin-bottom:1.3rem;">
+    <div>
+        <div class="va-eyebrow">Delivery</div>
+        <MudText Typo="Typo.h3" Class="mt-1" Style="font-weight:600;">Project Pipeline</MudText>
+        <MudText Typo="Typo.body2" Style="color:var(--mud-palette-text-secondary);">@_all.Count projects · @Format.Money(_all.Sum(p => p.Value)) total contract value</MudText>
+    </div>
+    <div style="display:flex;gap:.6rem;align-items:center;">
+        <MudToggleGroup T="string" @bind-Value="_view" Color="Color.Secondary" Size="Size.Small" CheckMark="false">
+            <MudToggleItem Value="@("board")" Text="Board" />
+            <MudToggleItem Value="@("list")" Text="List" />
+        </MudToggleGroup>
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Add" OnClick="@(() => CreateProject(null))">New Project</MudButton>
+    </div>
+</div>
+
+<!-- Category filter -->
+<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.4rem;">
+    <MudChip T="string" Variant="@(_category is null ? Variant.Filled : Variant.Outlined)" Color="Color.Default"
+             OnClick="@(() => _category = null)">All disciplines</MudChip>
+    @foreach (var cat in CategoryCatalog.All)
+    {
+        <MudChip T="string" Variant="@(_category == cat.Category ? Variant.Filled : Variant.Outlined)"
+                 Style="@(_category == cat.Category ? $"background:{cat.GradientTo};color:#fff;" : "")"
+                 OnClick="@(() => _category = cat.Category)">@cat.ShortName</MudChip>
+    }
+</div>
+
+@if (_view == "board")
+{
+    <div style="display:flex;gap:1rem;overflow-x:auto;padding-bottom:1rem;">
+        @foreach (var status in Enum.GetValues<ProjectStatus>())
+        {
+            var items = Filtered.Where(p => p.Status == status).ToList();
+            <div style="min-width:300px;width:300px;flex-shrink:0;">
+                <div style="@($"display:flex;justify-content:space-between;align-items:center;padding:.5rem .75rem;border-top:3px solid {Format.StatusColor(status)};background:var(--mud-palette-surface);border-radius:4px 4px 0 0;border:1px solid var(--mud-palette-lines-default);")">
+                    <MudText Typo="Typo.subtitle2" Style="font-weight:600;">@status.Display()</MudText>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text">@items.Count</MudChip>
+                </div>
+                <div style="background:var(--mud-palette-background);border:1px solid var(--mud-palette-lines-default);border-top:none;border-radius:0 0 4px 4px;padding:.6rem;min-height:120px;max-height:70vh;overflow-y:auto;">
+                    <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);display:block;margin-bottom:.5rem;">@Format.Money(items.Sum(p => p.Value))</MudText>
+                    @foreach (var p in items)
+                    {
+                        <MudPaper Elevation="0" Class="va-lift mb-2" Style="border:1px solid var(--mud-palette-lines-default);border-radius:5px;overflow:hidden;cursor:pointer;"
+                                  @onclick="@(() => EditProject(p))">
+                            <div style="height:90px;background:#0c1c18;">
+                                @if (p.PrimaryImage is not null)
+                                {
+                                    <ProjectImage Path="@p.PrimaryImage.Path" Alt="@p.Name" />
+                                }
+                            </div>
+                            <div class="pa-3">
+                                <MudText Typo="Typo.body2" Style="font-weight:500;line-height:1.2;">@p.Name</MudText>
+                                <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);">@p.Client?.Name</MudText>
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.5rem;">
+                                    <Pill Text="@CategoryCatalog.Get(p.Category).ShortName" Color="@CategoryCatalog.Get(p.Category).GradientTo" Dot="false" />
+                                    <MudText Style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--va-brass-deep);">@Format.Money(p.Value)</MudText>
+                                </div>
+                                @if ((p.Status == ProjectStatus.InConstruction || p.Status == ProjectStatus.InDesign) && p.ProgressPercent > 0)
+                                {
+                                    <MudProgressLinear Color="Color.Secondary" Value="p.ProgressPercent" Class="mt-2" Style="height:5px;border-radius:3px;" />
+                                }
+                            </div>
+                        </MudPaper>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <MudPaper Elevation="0" Style="border:1px solid var(--mud-palette-lines-default);border-radius:6px;">
+        <MudDataGrid T="Project" Items="Filtered" Dense="true" Hover="true" SortMode="SortMode.Multiple" Class="pa-2"
+                     RowClick="@(args => EditProject(args.Item))" RowStyle="cursor:pointer;">
+            <Columns>
+                <TemplateColumn Title="Project" SortBy="@(p => p.Name)">
+                    <CellTemplate>
+                        <div style="display:flex;align-items:center;gap:.7rem;">
+                            <div style="width:48px;height:36px;border-radius:4px;overflow:hidden;flex-shrink:0;background:#0c1c18;">
+                                @if (context.Item.PrimaryImage is not null)
+                                {
+                                    <ProjectImage Path="@context.Item.PrimaryImage.Path" Alt="@context.Item.Name" />
+                                }
+                            </div>
+                            <div>
+                                <MudText Typo="Typo.body2" Style="font-weight:500;">@context.Item.Name</MudText>
+                                <MudText Typo="Typo.caption" Style="color:var(--mud-palette-text-secondary);">@context.Item.CodeName · @context.Item.Client?.Name</MudText>
+                            </div>
+                        </div>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Category" SortBy="@(p => (int)p.Category)">
+                    <CellTemplate><Pill Text="@CategoryCatalog.Get(context.Item.Category).ShortName" Color="@CategoryCatalog.Get(context.Item.Category).GradientTo" Dot="false" /></CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Stage" SortBy="@(p => (int)p.Status)">
+                    <CellTemplate><Pill Text="@context.Item.Status.Display()" Color="@Format.StatusColor(context.Item.Status)" /></CellTemplate>
+                </TemplateColumn>
+                <PropertyColumn Property="@(p => p.City)" Title="Location" />
+                <PropertyColumn Property="@(p => p.Year)" Title="Year" />
+                <TemplateColumn Title="Value" SortBy="@(p => p.Value)">
+                    <CellTemplate><MudText Style="font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:var(--va-brass-deep);">@Format.Money(context.Item.Value)</MudText></CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="" Sortable="false">
+                    <CellTemplate>
+                        <div @onclick:stopPropagation="true">
+                            <MudMenu Icon="@Icons.Material.Filled.MoreVert" Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                                <MudMenuItem Icon="@Icons.Material.Filled.Visibility" OnClick="@(() => Nav.NavigateTo($"/portfolio/{context.Item.Id}"))">View detail</MudMenuItem>
+                                <MudMenuItem Icon="@Icons.Material.Filled.Edit" OnClick="@(() => EditProject(context.Item))">Edit</MudMenuItem>
+                                <MudMenuItem Icon="@Icons.Material.Filled.Delete" OnClick="@(() => DeleteProject(context.Item))">Archive</MudMenuItem>
+                            </MudMenu>
+                        </div>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent><MudDataGridPager T="Project" /></PagerContent>
+        </MudDataGrid>
+    </MudPaper>
+}
+
+@code {
+    private List<Project> _all = new();
+    private ProjectCategory? _category;
+    private string _view = "board";
+
+    private IEnumerable<Project> Filtered => _category is null ? _all : _all.Where(p => p.Category == _category);
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    private async Task Load() => _all = await ProjectSvc.GetListAsync();
+
+    private async Task CreateProject(int? clientId)
+    {
+        var parameters = new DialogParameters<ProjectFormDialog> { { x => x.DefaultClientId, clientId } };
+        var dialog = await DialogService.ShowAsync<ProjectFormDialog>("New Project", parameters);
+        var result = await dialog.Result;
+        if (result is not null && !result.Canceled) { Snackbar.Add("Project created", Severity.Success); await Load(); }
+    }
+
+    private async Task EditProject(Project p)
+    {
+        var parameters = new DialogParameters<ProjectFormDialog> { { x => x.Existing, p } };
+        var dialog = await DialogService.ShowAsync<ProjectFormDialog>("Edit Project", parameters);
+        var result = await dialog.Result;
+        if (result is not null && !result.Canceled) { Snackbar.Add("Project updated", Severity.Success); await Load(); }
+    }
+
+    private async Task DeleteProject(Project p)
+    {
+        var ok = await DialogService.ShowMessageBoxAsync("Archive project", $"Archive \"{p.Name}\"?", yesText: "Archive", cancelText: "Cancel");
+        if (ok == true) { await ProjectSvc.DeleteAsync(p.Id); Snackbar.Add("Project archived", Severity.Info); await Load(); }
+    }
+}

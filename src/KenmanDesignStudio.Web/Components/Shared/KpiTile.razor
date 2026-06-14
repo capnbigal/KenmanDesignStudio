@@ -1,0 +1,27 @@
+<MudPaper Elevation="0" Class="va-kpi va-lift pa-5" Style="height:100%;border:1px solid var(--mud-palette-lines-default);border-radius:6px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <MudText Typo="Typo.overline" Style="color:var(--mud-palette-text-secondary);">@Label</MudText>
+        <MudIcon Icon="@Icon" Style="color:var(--va-brass);" Size="Size.Medium" />
+    </div>
+    <MudText Class="va-kpi-value mt-3" Style="@($"font-size:2.6rem;color:{ValueColor};")">@Value</MudText>
+    @if (!string.IsNullOrEmpty(Caption))
+    {
+        <div class="mt-2" style="display:flex;align-items:center;gap:.35rem;">
+            @if (TrendUp is not null)
+            {
+                <MudIcon Icon="@(TrendUp == true ? Icons.Material.Filled.TrendingUp : Icons.Material.Filled.TrendingDown)"
+                         Size="Size.Small" Color="@(TrendUp == true ? Color.Success : Color.Error)" />
+            }
+            <MudText Typo="Typo.body2" Style="color:var(--mud-palette-text-secondary);">@Caption</MudText>
+        </div>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public string Icon { get; set; } = Icons.Material.Filled.Analytics;
+    [Parameter] public string? Caption { get; set; }
+    [Parameter] public bool? TrendUp { get; set; }
+    [Parameter] public string ValueColor { get; set; } = "var(--mud-palette-text-primary)";
+}
