@@ -1,0 +1,39 @@
+name: observability
+
+# Standalone .NET Aspire Dashboard — a central place to view logs, traces, and
+# metrics from every app on the platform. Apps export OpenTelemetry (OTLP) to it
+# over the shared "awblazor_default" docker network; the web UI is reverse-proxied
+# by nginx at dashboard.alibalib.com.
+#
+# Deploy on the droplet:
+#   cd /opt/kenmandesignstudio/deployment/observability
+#   cp .env.template .env && chmod 600 .env   # set DASHBOARD_TOKEN + OTLP_API_KEY
+#   sudo docker compose up -d
+
+services:
+  aspire-dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.0
+    container_name: aspire-dashboard
+    environment:
+      ASPNETCORE_URLS: http://+:18888
+      # OTLP/gRPC ingest endpoint (inside the container).
+      DOTNET_DASHBOARD_OTLP_ENDPOINT_URL: http://+:18889
+      # Web UI is protected by a fixed login token (paste it once in the browser).
+      Dashboard__Frontend__AuthMode: BrowserToken
+      Dashboard__Frontend__BrowserToken: "${DASHBOARD_TOKEN:?set DASHBOARD_TOKEN in .env}"
+      # Apps must send this key as the x-otlp-api-key header to push telemetry.
+      Dashboard__Otlp__AuthMode: ApiKey
+      Dashboard__Otlp__PrimaryApiKey: "${OTLP_API_KEY:?set OTLP_API_KEY in .env}"
+    ports:
+      # Web UI -> localhost only; nginx fronts it at dashboard.alibalib.com.
+      - "127.0.0.1:18888:18888"
+      # NOTE: OTLP port 18889 is deliberately NOT published to the host. Apps reach
+      # it privately over the docker network at http://aspire-dashboard:18889.
+    networks:
+      - awblazor
+    restart: unless-stopped
+
+networks:
+  awblazor:
+    external: true
+    name: awblazor_default

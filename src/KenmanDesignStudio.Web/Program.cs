@@ -1,6 +1,11 @@
 using ApexCharts;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
+using OpenTelemetry;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using KenmanDesignStudio.Infrastructure.Data;
 using KenmanDesignStudio.Infrastructure.Seeding;
 using KenmanDesignStudio.Web.Components;
@@ -35,6 +40,32 @@ builder.Services.AddScoped<RequestService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<ShowcaseService>();
 builder.Services.AddScoped<ImageResolver>();
+
+// ---- Observability: export OpenTelemetry (traces, metrics, logs) to the Aspire Dashboard ----
+var otel = builder.Services.AddOpenTelemetry();
+otel.ConfigureResource(r => r.AddService(
+    serviceName: builder.Configuration["OTEL_SERVICE_NAME"] ?? "kenmandesignstudio"));
+otel.WithTracing(t => t
+    .AddAspNetCoreInstrumentation()
+    .AddHttpClientInstrumentation());
+otel.WithMetrics(m => m
+    .AddAspNetCoreInstrumentation()
+    .AddHttpClientInstrumentation()
+    .AddRuntimeInstrumentation());
+builder.Logging.AddOpenTelemetry(o =>
+{
+    o.IncludeFormattedMessage = true;
+    o.IncludeScopes = true;
+});
+// Only wire the OTLP exporter when an endpoint is configured (OTEL_EXPORTER_OTLP_ENDPOINT),
+// so local runs without a collector don't emit export errors.
+if (!string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]))
+{
+    otel.UseOtlpExporter();
+}
+
+// Liveness endpoint for uptime checks.
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -79,6 +110,8 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 app.UseAntiforgery();
+
+app.MapHealthChecks("/health");
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

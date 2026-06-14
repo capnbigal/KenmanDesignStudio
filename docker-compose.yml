@@ -26,6 +26,13 @@ services:
       ConnectionStrings__DefaultConnection: "Server=awblazor-sqlserver,1433;Database=KenmanDesignStudio;User Id=sa;Password=${SA_PASSWORD:?set SA_PASSWORD in .env};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=True"
       Seed__AutoMigrate: "true"
       Seed__AutoSeed: "true"
+      # Observability — opt-in. Empty OTLP_ENDPOINT (default) = no export, app runs as before.
+      # Set OTLP_ENDPOINT + OTLP_API_KEY in .env once the Aspire Dashboard is deployed
+      # (see deployment/OBSERVABILITY.md). The app reaches the dashboard over the shared network.
+      OTEL_SERVICE_NAME: kenmandesignstudio
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTLP_ENDPOINT:-}"
+      OTEL_EXPORTER_OTLP_HEADERS: "x-otlp-api-key=${OTLP_API_KEY:-}"
     ports:
       # localhost only — nginx terminates TLS and reverse-proxies to this.
       - "127.0.0.1:8081:8080"
